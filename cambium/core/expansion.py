@@ -73,7 +73,16 @@ class ExpansionEngine:
         # Insert blocks (from end to start to maintain indices)
         for i, pos in enumerate(sorted_positions):
             layers_module.insert(pos, new_blocks[i])
+            new_blocks[i]._cambium_new = True
             logger.debug(f"Inserted new block at position {pos}")
+
+        # Fix layer_idx for ALL layers after insertion.
+        # Original layers shifted positions; new layers got dummy indices.
+        # layer_idx is used for KV-cache indexing during generation.
+        for idx, layer in enumerate(layers_module):
+            for submodule in layer.modules():
+                if hasattr(submodule, "layer_idx"):
+                    submodule.layer_idx = idx
 
         # Record expansion
         self.expansion_history.append({

@@ -108,16 +108,24 @@ class FreezingManager:
 
         This is useful for Phase 1 training where only newly added layers are trained.
 
-        Args:
-            new_layer_prefix: Prefix used to identify new layers (default: ``"new_"``)
+        New layers are identified by the ``_cambium_new`` attribute set during
+        block insertion, rather than by name patterns.
         """
         # Freeze everything
         self.freeze_all()
 
-        # Unfreeze new layers
-        new_layers = self.unfreeze_by_pattern(f".*{new_layer_prefix}.*")
+        # Unfreeze parameters belonging to layers marked as new by the engine
+        new_params_count = 0
+        for name, module in self.model.named_modules():
+            if getattr(module, "_cambium_new", False):
+                for param in module.parameters(recurse=True):
+                    param.requires_grad = True
+                    new_params_count += param.numel()
 
-        logger.info(f"Phase 1 setup: Froze original weights, {len(new_layers)} new layers trainable")
+        logger.info(
+            f"Phase 1 setup: Froze original weights, "
+            f"{new_params_count} new parameters trainable"
+        )
 
     def freeze_embeddings(self) -> None:
         """Freeze embedding layers (typically want to keep these fixed)."""
@@ -263,10 +271,8 @@ class FreezingManager:
         print(f"Trainable parameters: {info['trainable_params']:,} ({info['percent_trainable']:.2f}%)")
         print(f"Frozen parameters: {info['frozen_params']:,}")
         print(f"Trainable parameter groups:")
-        for name in info["trainable_names"][:10]:  # Show first 10
+        for name in info["trainable_names"]:
             print(f"  - {name}")
-        if len(info["trainable_names"]) > 10:
-            print(f"  ... and {len(info['trainable_names']) - 10} more")
         print("=" * 60)
 
     def save_state(self, path: str) -> None:

@@ -190,18 +190,13 @@ class ExpandableModel:
         """
         os.makedirs(save_directory, exist_ok=True)
 
-        # Save model weights
-        if safe_serialization:
-            from safetensors.torch import save_file
-            save_file(self.model.state_dict(), os.path.join(save_directory, "model.safetensors"))
-        else:
-            torch.save(
-                self.model.state_dict(),
-                os.path.join(save_directory, "pytorch_model.bin"),
-            )
-
-        # Save config
-        self.config.save_pretrained(save_directory)
+        # Save model weights and config via Hugging Face's native method.
+        # This correctly handles shared tensors (e.g., tied embeddings/lm_head)
+        # for safetensors by cloning them during save and retieing on load.
+        self.model.save_pretrained(
+            save_directory,
+            safe_serialization=safe_serialization,
+        )
 
         # Save expansion metadata
         metadata = {
