@@ -1,0 +1,287 @@
+"""
+ExpandableModel - PyTorch-native API for model expansion.
+
+Provides an explicit, object-oriented interface for loading models
+and applying expansion strategies.
+"""
+
+from typing import Any, Dict, List, Optional, Union
+import logging
+import json
+import os
+
+import torch
+from torch import nn
+
+from cambium.core.expansion import ExpansionEngine
+from cambium.core.freezing import FreezingManager
+from cambium.core.initialization import Initializer
+
+logger = logging.getLogger(__name__)
+
+
+class ExpandableModel:
+    """
+    Wrapper for Hugging Face models that enables surgical expansion.
+
+    Provides a PyTorch-native API for loading models and applying
+    expansion strategies.
+
+    Example::
+
+        from cambium import ExpandableModel, InterleavedExpansion
+
+        # Load model
+        model = ExpandableModel.from_pretrained("google/gemma-2b")
+
+        # Expand
+        expander = InterleavedExpansion(num_layers=4)
+        model.expand(expander)
+
+        # Get the expanded model for training
+        expanded = model.get_model()
+    """
+
+    def __init__(
+        self,
+        model: nn.Module,
+        model_name: Optional[str] = None,
+        config: Optional[Any] = None,
+    ):
+        """
+        Initialize an ExpandableModel wrapper.
+
+        Args:
+            model: The base PyTorch model
+            model_name: Name/path of the model (for metadata)
+            config: Model configuration
+        """
+        self.model = model
+        self.model_name = model_name or "unknown"
+        self.config = config or model.config
+
+        # Expansion tracking
+        self.engine = ExpansionEngine()
+        self.expansions: List[Dict[str, Any]] = []
+        self.is_expanded = False
+
+        # Training utilities
+        self.freezing_manager = FreezingManager(model)
+
+    @classmethod
+    def from_pretrained(
+        cls,
+        model_name_or_path: str,
+        **kwargs,
+    ) -> "ExpandableModel":
+        """
+        Load a pretrained model and wrap it.
+
+        Args:
+            model_name_or_path: Hugging Face model name or path
+            **kwargs: Additional arguments for from_pretrained
+
+        Returns:
+            ExpandableModel instance
+        """
+        try:
+            from transformers import AutoModelForCausalLM, AutoConfig
+        except ImportError:
+            raise ImportError(
+                "transformers library required. Install with: pip install transformers"
+            )
+
+        logger.info(f"Loading model: {model_name_or_path}")
+
+        # Load model
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name_or_path,
+            **kwargs,
+        )
+
+        config = model.config
+
+        return cls(model, model_name=model_name_or_path, config=config)
+
+    def expand(self, expander: Any) -> "ExpandableModel":
+        """
+        Apply an expansion strategy.
+
+        Args:
+            expander: Expansion strategy (e.g., InterleavedExpansion)
+
+        Returns:
+            self (for method chaining)
+        """
+        logger.info(f"Applying expansion: {type(expander).__name__}")
+
+        # Apply the expansion
+        expander.expand(self.model, self.engine)
+
+        # Track expansion
+        self.expansions.append({
+            "strategy": type(expander).__name__,
+            "config": getattr(expander, "__dict__", {}),
+        })
+
+        self.is_expanded = True
+
+        # Update freezing manager with the modified model
+        self.freezing_manager = FreezingManager(self.model)
+
+        logger.info("Expansion complete")
+        return self
+
+    def get_model(self) -> nn.Module:
+        """
+        Get the underlying PyTorch model.
+
+        Returns:
+            The model (expanded if expand() was called)
+        """
+        return self.model
+
+    def get_config(self) -> Any:
+        """
+        Get the model configuration.
+
+        Returns:
+            Model config (updated after expansion)
+        """
+        return self.config
+
+    def freeze_original(self) -> "ExpandableModel":
+        """
+        Freeze original pretrained weights.
+
+        Newly added layers remain trainable.
+
+        Returns:
+            self (for method chaining)
+        """
+        self.freezing_manager.freeze_original_layers()
+        return self
+
+    def unfreeze_all(self) -> "ExpandableModel":
+        """
+        Unfreeze all parameters.
+
+        Returns:
+            self (for method chaining)
+        """
+        self.freezing_manager.unfreeze_all()
+        return self
+
+    def print_trainable(self) -> None:
+        """Print a summary of trainable vs frozen parameters."""
+        self.freezing_manager.print_trainable_status()
+
+    def save_expanded(
+        self,
+        save_directory: str,
+        safe_serialization: bool = True,
+    ) -> None:
+        """
+        Save the expanded model and expansion metadata.
+
+        Args:
+            save_directory: Directory to save to
+            safe_serialization: Use safetensors format
+        """
+        os.makedirs(save_directory, exist_ok=True)
+
+        # Save model weights
+        if safe_serialization:
+            from safetensors.torch import save_file
+            save_file(self.model.state_dict(), os.path.join(save_directory, "model.safetensors"))
+        else:
+            torch.save(
+                self.model.state_dict(),
+                os.path.join(save_directory, "pytorch_model.bin"),
+            )
+
+        # Save config
+        self.config.save_pretrained(save_directory)
+
+        # Save expansion metadata
+        metadata = {
+            "original_model": self.model_name,
+            "expansions": self.expansions,
+            "is_expanded": self.is_expanded,
+        }
+        with open(os.path.join(save_directory, "cambium_metadata.json"), "w") as f:
+            json.dump(metadata, f, indent=2)
+
+        logger.info(f"Saved expanded model to {save_directory}")
+
+    @classmethod
+    def load_expanded(
+        cls,
+        load_directory: str,
+        **kwargs,
+    ) -> "ExpandableModel":
+        """
+        Load a previously expanded model.
+
+        Args:
+            load_directory: Directory to load from
+            **kwargs: Additional arguments for model loading
+
+        Returns:
+            ExpandableModel instance
+        """
+        # Load metadata
+        metadata_path = os.path.join(load_directory, "cambium_metadata.json")
+        with open(metadata_path, "r") as f:
+            metadata = json.load(f)
+
+        # Load base model and apply expansions
+        from transformers import AutoModelForCausalLM
+
+        model = AutoModelForCausalLM.from_pretrained(
+            load_directory,
+            **kwargs,
+        )
+
+        expandable = cls(model, model_name=metadata.get("original_model"))
+        expandable.expansions = metadata.get("expansions", [])
+        expandable.is_expanded = metadata.get("is_expanded", False)
+
+        return expandable
+
+    def validate(self) -> Dict[str, Any]:
+        """
+        Validate the expanded model.
+
+        Returns:
+            Validation results dictionary
+        """
+        return self.engine.validate_expansion(self.model)
+
+    def get_expansion_report(self) -> str:
+        """Get a human-readable report of expansions."""
+        lines = [
+            f"Model: {self.model_name}",
+            f"Expanded: {self.is_expanded}",
+            "",
+            "Expansion History:",
+            "-" * 40,
+        ]
+
+        for i, exp in enumerate(self.expansions, 1):
+            lines.append(f"{i}. {exp['strategy']}")
+            for key, value in exp.get("config", {}).items():
+                lines.append(f"   {key}: {value}")
+
+        lines.append("")
+        lines.append(self.engine.get_expansion_report())
+
+        return "\n".join(lines)
+
+    def __repr__(self) -> str:
+        return (
+            f"ExpandableModel("
+            f"model_name='{self.model_name}', "
+            f"expanded={self.is_expanded}, "
+            f"num_expansions={len(self.expansions)})"
+        )
