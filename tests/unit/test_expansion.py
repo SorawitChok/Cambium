@@ -127,6 +127,53 @@ class TestExpansionEngine:
         assert "Expansion Report" in report
         assert "insert_blocks" in report
 
+    def test_insert_blocks_tags_new_blocks(self):
+        """Test that inserted blocks are tagged with _cambium_new."""
+        model = SimpleModel(num_layers=4)
+        engine = ExpansionEngine()
+
+        def block_factory():
+            return nn.Linear(32, 32)
+
+        engine.insert_blocks(
+            model,
+            positions=[1, 3],
+            block_factory=block_factory,
+            block_attribute="model.layers",
+        )
+
+        # Only the newly inserted blocks should have the tag
+        tagged_count = sum(
+            1 for layer in model.model.layers
+            if getattr(layer, "_cambium_new", False)
+        )
+        assert tagged_count == 2
+
+    def test_insert_blocks_updates_layer_idx(self):
+        """Test that layer_idx is updated on all layers after insertion."""
+        model = SimpleModel(num_layers=4)
+        engine = ExpansionEngine()
+
+        # Add a fake layer_idx attribute to mimic transformer blocks
+        for idx, layer in enumerate(model.model.layers):
+            layer.layer_idx = idx
+
+        def block_factory():
+            layer = nn.Linear(32, 32)
+            layer.layer_idx = 0
+            return layer
+
+        engine.insert_blocks(
+            model,
+            positions=[2],
+            block_factory=block_factory,
+            block_attribute="model.layers",
+        )
+
+        # All layers should now have monotonically correct layer_idx
+        for idx, layer in enumerate(model.model.layers):
+            assert layer.layer_idx == idx
+
 
 class TestWidthExpansion:
     """Tests for width expansion functionality."""

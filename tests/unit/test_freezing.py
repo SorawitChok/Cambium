@@ -138,7 +138,11 @@ class TestFreezingManager:
 
     def test_freeze_original_layers(self, model, manager):
         """Test freezing original layers while keeping new layers trainable."""
-        manager.freeze_original_layers(new_layer_prefix="new_layers")
+        # Tag new layers with _cambium_new as the engine would
+        for layer in model.new_layers:
+            layer._cambium_new = True
+
+        manager.freeze_original_layers()
 
         for name, param in model.named_parameters():
             if "new_layers" in name:
