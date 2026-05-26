@@ -3,7 +3,7 @@ Training utilities for integration with HF Trainer, TRL, and custom loops.
 """
 
 import logging
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Union
 
 import torch
 from torch import nn
@@ -28,7 +28,7 @@ class TrainingUtilities:
     @staticmethod
     def get_optimizer_with_discriminative_lr(
         model: nn.Module,
-        lr_config: Dict[str, float],
+        lr_config: dict[str, float],
         optimizer_class: type = torch.optim.AdamW,
         weight_decay: float = 0.01,
     ) -> Optimizer:
@@ -60,7 +60,7 @@ class TrainingUtilities:
         """
         import re
 
-        param_groups: List[Dict[str, Any]] = []
+        param_groups: list[dict[str, Any]] = []
         assigned_params: set = set()
 
         # Sort patterns by specificity (more specific first)
@@ -117,7 +117,7 @@ class TrainingUtilities:
     @staticmethod
     def prepare_for_peft(
         model: nn.Module,
-        lora_config: Optional[Dict] = None,
+        lora_config: dict | None = None,
     ) -> nn.Module:
         """
         Prepare an expanded model for PEFT/LoRA fine-tuning.
@@ -226,7 +226,7 @@ class TrainingUtilities:
         model: nn.Module,
         training_args: Any,
         train_dataset: Any,
-        eval_dataset: Optional[Any] = None,
+        eval_dataset: Any | None = None,
         **kwargs,
     ) -> Any:
         """
@@ -297,7 +297,7 @@ class TrainingUtilities:
         model: nn.Module,
         phase: int = 1,
         base_lr: float = 1e-4,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Create optimizer parameter groups for different training phases.
 

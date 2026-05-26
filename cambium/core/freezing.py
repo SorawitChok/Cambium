@@ -4,7 +4,7 @@ Advanced freezing and unfreezing utilities for staged training.
 
 import logging
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import torch
 from torch import nn
@@ -20,7 +20,7 @@ class FreezingManager:
     progressive unfreezing strategies.
     """
 
-    def __init__(self, model: Optional[nn.Module] = None):
+    def __init__(self, model: nn.Module | None = None):
         """
         Initialize the freezing manager.
 
@@ -33,7 +33,7 @@ class FreezingManager:
             self.model = nn.Identity()
         else:
             self.model = model
-        self.original_requires_grad: Dict[str, bool] = {}
+        self.original_requires_grad: dict[str, bool] = {}
         if model is not None:
             self._record_original_state()
 
@@ -60,7 +60,7 @@ class FreezingManager:
             param.requires_grad = True
         logger.debug("Unfroze all parameters")
 
-    def freeze_by_pattern(self, pattern: str) -> List[str]:
+    def freeze_by_pattern(self, pattern: str) -> list[str]:
         """
         Freeze parameters matching a regex pattern.
 
@@ -81,7 +81,7 @@ class FreezingManager:
         logger.debug(f"Froze {len(frozen)} parameters matching pattern '{pattern}'")
         return frozen
 
-    def unfreeze_by_pattern(self, pattern: str) -> List[str]:
+    def unfreeze_by_pattern(self, pattern: str) -> list[str]:
         """
         Unfreeze parameters matching a regex pattern.
 
@@ -194,7 +194,7 @@ class FreezingManager:
         self.unfreeze_layer_range(start_idx, end_idx)
         logger.info(f"Unfroze group {group_idx}/{num_groups} (layers {start_idx}-{end_idx})")
 
-    def get_trainable_params(self) -> Dict[str, Any]:
+    def get_trainable_params(self) -> dict[str, Any]:
         """
         Get information about trainable parameters.
 
@@ -226,8 +226,8 @@ class FreezingManager:
 
     def get_parameter_groups_for_discriminative_lr(
         self,
-        lr_config: Dict[str, float],
-    ) -> List[Dict[str, Any]]:
+        lr_config: dict[str, float],
+    ) -> list[dict[str, Any]]:
         """
         Create parameter groups with different learning rates.
 

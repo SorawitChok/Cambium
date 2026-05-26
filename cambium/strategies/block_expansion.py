@@ -7,7 +7,7 @@ enabling increased capacity while preserving original weights.
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable
 
 import torch
 from torch import nn
@@ -35,13 +35,13 @@ class InterleavedExpansion:
     num_layers: int
     """Number of new blocks to insert."""
 
-    positions: Optional[List[int]] = None
+    positions: dict[int] | None = None
     """Specific positions to insert blocks. Auto-distributed if None."""
 
     initialization: str = "identity"
     """Initialization strategy: 'identity', 'small_random', 'noise', 'zero'."""
 
-    block_config: Optional[Dict[str, Any]] = field(default_factory=dict)
+    block_config: dict[str, Any] | None = field(default_factory=dict)
     """Override configuration for new blocks."""
 
     layer_attribute: str = "model.layers"
@@ -99,7 +99,7 @@ class InterleavedExpansion:
             module = getattr(module, part)
         return module
 
-    def _compute_positions(self, current_layers: int) -> List[int]:
+    def _compute_positions(self, current_layers: int) -> dict[int]:
         """
         Compute insertion positions for new blocks.
 
@@ -165,7 +165,7 @@ class InterleavedExpansion:
 
         return create_block
 
-    def _apply_initialization(self, model: nn.Module, positions: List[int]) -> None:
+    def _apply_initialization(self, model: nn.Module, positions: dict[int]) -> None:
         """Apply initialization strategy to newly inserted blocks."""
         layers_module = self._get_layers_module(model)
 

@@ -3,7 +3,7 @@ Low-level surgical operations for transformer model expansion.
 """
 
 import logging
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable
 
 import torch
 from torch import nn
@@ -27,12 +27,12 @@ class ExpansionEngine:
             model_type: Type of model architecture (auto-detected if "auto")
         """
         self.model_type = model_type
-        self.expansion_history: List[Dict[str, Any]] = []
+        self.expansion_history: list[dict[str, Any]] = []
 
     def insert_blocks(
         self,
         model: nn.Module,
-        positions: List[int],
+        positions: list[int],
         block_factory: Callable[[], nn.Module],
         block_attribute: str = "model.layers",
     ) -> None:
@@ -222,7 +222,7 @@ class ExpansionEngine:
         embedding.weight = nn.Parameter(new_weight)
         embedding.num_embeddings = new_dim
 
-    def validate_expansion(self, model: nn.Module) -> Dict[str, Any]:
+    def validate_expansion(self, model: nn.Module) -> dict[str, Any]:
         """
         Validate that an expanded model is consistent and trainable.
 

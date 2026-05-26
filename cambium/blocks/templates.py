@@ -6,7 +6,6 @@ reference when building their own custom blocks.
 """
 
 import math
-from typing import Optional
 
 import torch
 import torch.nn.functional as F

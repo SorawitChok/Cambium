@@ -4,7 +4,6 @@ Initialization strategies for new model components.
 
 import logging
 from enum import Enum
-from typing import List, Optional
 
 import torch
 import torch.nn.functional as F
@@ -44,9 +43,9 @@ class Initializer:
 
     def apply(
         self,
-        new_modules: List[nn.Module],
-        strategy: Optional[InitializationStrategy] = None,
-        reference_modules: Optional[List[nn.Module]] = None,
+        new_modules: list[nn.Module],
+        strategy: InitializationStrategy | None = None,
+        reference_modules: list[nn.Module] | None = None,
         scale: float = 1.0,
     ) -> None:
         """
@@ -82,8 +81,8 @@ class Initializer:
 
     def _init_identity(
         self,
-        new_modules: List[nn.Module],
-        reference_modules: Optional[List[nn.Module]],
+        new_modules: list[nn.Module],
+        reference_modules: list[nn.Module] | None,
         scale: float,
     ) -> None:
         """
@@ -114,7 +113,7 @@ class Initializer:
             elif isinstance(module, nn.RMSNorm):
                 nn.init.ones_(module.weight)
 
-    def _init_small_random(self, modules: List[nn.Module], scale: float) -> None:
+    def _init_small_random(self, modules: list[nn.Module], scale: float) -> None:
         """Initialize with small random values (Gaussian noise)."""
         for module in modules:
             if isinstance(module, nn.Linear):
@@ -124,7 +123,7 @@ class Initializer:
             elif isinstance(module, nn.Embedding):
                 nn.init.normal_(module.weight, mean=0.0, std=0.02 * scale)
 
-    def _init_noise(self, modules: List[nn.Module], scale: float) -> None:
+    def _init_noise(self, modules: list[nn.Module], scale: float) -> None:
         """Initialize with larger noise for more diversity."""
         for module in modules:
             if isinstance(module, nn.Linear):
@@ -134,7 +133,7 @@ class Initializer:
             elif isinstance(module, nn.Embedding):
                 nn.init.normal_(module.weight, mean=0.0, std=0.1 * scale)
 
-    def _init_zero(self, modules: List[nn.Module]) -> None:
+    def _init_zero(self, modules: list[nn.Module]) -> None:
         """Zero initialization (useful for output layers in residual connections)."""
         for module in modules:
             if isinstance(module, nn.Linear):
@@ -144,7 +143,7 @@ class Initializer:
             elif isinstance(module, nn.Embedding):
                 nn.init.zeros_(module.weight)
 
-    def _init_xavier(self, modules: List[nn.Module]) -> None:
+    def _init_xavier(self, modules: list[nn.Module]) -> None:
         """Xavier/Glorot initialization."""
         for module in modules:
             if isinstance(module, nn.Linear):
@@ -154,7 +153,7 @@ class Initializer:
             elif isinstance(module, nn.Embedding):
                 nn.init.xavier_uniform_(module.weight)
 
-    def _init_kaiming(self, modules: List[nn.Module]) -> None:
+    def _init_kaiming(self, modules: list[nn.Module]) -> None:
         """Kaiming/He initialization (good for ReLU/LeakyReLU)."""
         for module in modules:
             if isinstance(module, nn.Linear):
@@ -166,8 +165,8 @@ class Initializer:
 
     def _init_distill(
         self,
-        new_modules: List[nn.Module],
-        reference_modules: Optional[List[nn.Module]],
+        new_modules: list[nn.Module],
+        reference_modules: list[nn.Module] | None,
     ) -> None:
         """
         Initialize from a reference (teacher) model.

@@ -8,7 +8,7 @@ Supports three input modes: block class, block factory, or pre-created instances
 import inspect
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Type
+from typing import Any, Callable, Type
 
 import torch
 from torch import nn
@@ -70,20 +70,20 @@ class CustomBlockExpansion:
     """
 
     # Exactly one of these must be provided
-    block_class: Optional[Type[nn.Module]] = None
+    block_class: Type[nn.Module] | None = None
     """Block class to instantiate. Called as block_class(config, layer_idx=i)."""
 
-    block_factory: Optional[Callable[[], nn.Module]] = None
+    block_factory: Callable[[], nn.Module] | None = None
     """Factory callable that returns a new nn.Module instance."""
 
-    block_instances: Optional[List[nn.Module]] = None
+    block_instances: list[nn.Module] | None = None
     """Pre-created block instances. Must match len(positions) or num_layers."""
 
     # Where and how many
-    num_layers: Optional[int] = None
+    num_layers: int | None = None
     """Number of blocks to insert. Auto-distributes if positions is None."""
 
-    positions: Optional[List[int]] = None
+    positions: list[int] | None = None
     """Specific positions to insert blocks at. Overrides num_layers distribution."""
 
     # Initialization
@@ -91,7 +91,7 @@ class CustomBlockExpansion:
     """Initialization strategy: 'smart', 'identity', 'small_random', 'noise',
        'zero', 'xavier', 'kaiming', 'custom'."""
 
-    custom_init_fn: Optional[Callable[[nn.Module], None]] = None
+    custom_init_fn: Callable[[nn.Module], None] | None = None
     """Custom initialization function. Called with each new block.
        Only used when initialization='custom'."""
 
@@ -209,7 +209,7 @@ class CustomBlockExpansion:
             module = getattr(module, part)
         return module
 
-    def _compute_positions(self, current_layers: int) -> List[int]:
+    def _compute_positions(self, current_layers: int) -> list[int]:
         """
         Compute insertion positions.
 
@@ -247,7 +247,7 @@ class CustomBlockExpansion:
 
         return positions
 
-    def _create_blocks(self, model: nn.Module, count: int) -> List[nn.Module]:
+    def _create_blocks(self, model: nn.Module, count: int) -> list[nn.Module]:
         """Create block instances based on which input mode was used."""
         config = model.config
 
@@ -280,7 +280,7 @@ class CustomBlockExpansion:
         # Should not reach here after _validate_inputs
         raise ValueError("No block source provided")
 
-    def _validate_blocks(self, blocks: List[nn.Module], model: nn.Module) -> None:
+    def _validate_blocks(self, blocks: list[nn.Module], model: nn.Module) -> None:
         """
         Validate that blocks are compatible with the model.
 
@@ -291,7 +291,7 @@ class CustomBlockExpansion:
         4. No NaN in parameters after initialization
         """
         hidden_size = model.config.hidden_size
-        errors: List[str] = []
+        errors: list[str] = []
 
         for i, block in enumerate(blocks):
             # Check 1: Forward signature
@@ -391,7 +391,7 @@ class CustomBlockExpansion:
 
         logger.info(f"All {len(blocks)} blocks passed validation")
 
-    def _apply_initialization(self, model: nn.Module, positions: List[int]) -> None:
+    def _apply_initialization(self, model: nn.Module, positions: list[int]) -> None:
         """Apply initialization strategy to the newly inserted blocks."""
         layers_module = self._get_layers_module(model)
 
@@ -440,7 +440,7 @@ class CustomBlockExpansion:
 
             logger.debug(f"Applied {self.initialization} initialization to block {i}")
 
-    def _update_config(self, model: nn.Module, positions: List[int]) -> None:
+    def _update_config(self, model: nn.Module, positions: list[int]) -> None:
         """Update model config to reflect the custom blocks."""
         num_new = len(positions)
 

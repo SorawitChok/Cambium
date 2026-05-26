@@ -7,7 +7,6 @@ weight re-mapping to preserve behavior.
 
 import logging
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
 
 import torch
 from torch import nn

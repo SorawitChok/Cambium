@@ -7,7 +7,7 @@ utility wrappers for inserting them into models.
 
 import logging
 from abc import ABC, abstractmethod
-from typing import ClassVar, List
+from typing import ClassVar
 
 import torch
 from torch import nn
@@ -45,7 +45,7 @@ class CambiumBlock(nn.Module, ABC):
                 return hidden_states + self.proj(hidden_states)
     """
 
-    required_config_keys: ClassVar[List[str]] = []
+    required_config_keys: ClassVar[list[str]] = []
 
     @abstractmethod
     def forward(self, hidden_states: torch.Tensor, **kwargs) -> torch.Tensor:

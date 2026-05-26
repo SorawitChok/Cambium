@@ -7,7 +7,7 @@ similar to MoE-lite or parallel adapter architectures.
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable
 
 import torch
 import torch.nn.functional as F
@@ -171,7 +171,7 @@ class ParallelAdapterExpansion:
     layer_attribute: str = "model.layers"
     """Path to transformer layers."""
 
-    target_layers: Optional[List[int]] = field(default_factory=list)
+    target_layers: list[int] | None = field(default_factory=list)
     """Specific layer indices to add adapters to. If empty, add to all."""
 
     def expand(self, model: nn.Module, engine: ExpansionEngine) -> nn.Module:
@@ -296,7 +296,7 @@ class MixtureOfExpertsExpansion:
     top_k: int = 2
     """Number of experts to route to for each token."""
 
-    target_layers: Optional[List[int]] = field(default_factory=list)
+    target_layers: list[int] | None = field(default_factory=list)
     """Layers to add MoE to. If empty, add to FFN layers."""
 
     def expand(self, model: nn.Module, engine: ExpansionEngine) -> nn.Module:

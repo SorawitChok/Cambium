@@ -8,7 +8,7 @@ and applying expansion strategies.
 import json
 import logging
 import os
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import torch
 from torch import nn
@@ -45,8 +45,8 @@ class ExpandableModel:
     def __init__(
         self,
         model: nn.Module,
-        model_name: Optional[str] = None,
-        config: Optional[Any] = None,
+        model_name: str | None = None,
+        config: Any | None = None,
     ):
         """
         Initialize an ExpandableModel wrapper.
@@ -62,7 +62,7 @@ class ExpandableModel:
 
         # Expansion tracking
         self.engine = ExpansionEngine()
-        self.expansions: List[Dict[str, Any]] = []
+        self.expansions: list[dict[str, Any]] = []
         self.is_expanded = False
 
         # Training utilities
@@ -246,7 +246,7 @@ class ExpandableModel:
 
         return expandable
 
-    def validate(self) -> Dict[str, Any]:
+    def validate(self) -> dict[str, Any]:
         """
         Validate the expanded model.
 

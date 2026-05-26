@@ -4,7 +4,7 @@ StagedTrainer - Orchestrates multi-phase training with progressive unfreezing.
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 import torch
 from torch import nn
@@ -34,13 +34,13 @@ class TrainingPhase:
     freeze: Optional[str] = None
     """What to freeze: 'original', 'all', 'none', or None (no change)."""
 
-    unfreeze_groups: Optional[List[int]] = None
+    unfreeze_groups: Optional[list[int]] = None
     """Layer group indices to unfreeze (for progressive unfreezing)."""
 
     lr: float = 1e-4
     """Learning rate for this phase."""
 
-    discriminative_lr: Optional[Dict[str, float]] = field(default_factory=dict)
+    discriminative_lr: Optional[dict[str, float]] = field(default_factory=dict)
     """
     Discriminative LR config mapping patterns to learning rates.
     Example: {"embeddings": 1e-7, "original_layers": 1e-6, "new_layers": 1e-4}
@@ -64,7 +64,7 @@ class TrainingPhase:
     save_every: int = 500
     """Save checkpoint every N steps."""
 
-    callbacks: List[Callable] = field(default_factory=list)
+    callbacks: list[Callable] = field(default_factory=list)
     """Optional callbacks to run at phase start/end."""
 
 
@@ -137,7 +137,7 @@ class StagedTrainer:
         self.optimizer_class = optimizer_class
         self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        self.phases: List[TrainingPhase] = []
+        self.phases: list[TrainingPhase] = []
         self.current_phase_idx = 0
 
         # Training state
@@ -161,7 +161,7 @@ class StagedTrainer:
         eval_dataloader: Optional[DataLoader] = None,
         optimizer: Optional[Optimizer] = None,
         scheduler: Optional[Any] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Run all training phases.
 
@@ -256,7 +256,7 @@ class StagedTrainer:
         eval_dataloader: Optional[DataLoader],
         optimizer: Optimizer,
         scheduler: Optional[Any],
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Train a single phase."""
         self.model.to(self.device)
         self.model.train()
@@ -363,7 +363,7 @@ class StagedTrainer:
         self.model.train()
         return total_loss / num_batches if num_batches > 0 else float("inf")
 
-    def save_checkpoint(self, path: str, metadata: Optional[Dict] = None) -> None:
+    def save_checkpoint(self, path: str, metadata: Optional[dict] = None) -> None:
         """Save training checkpoint."""
         checkpoint = {
             "model_state_dict": self.model.state_dict(),
@@ -375,7 +375,7 @@ class StagedTrainer:
         torch.save(checkpoint, path)
         logger.info(f"Saved checkpoint to {path}")
 
-    def load_checkpoint(self, path: str) -> Dict[str, Any]:
+    def load_checkpoint(self, path: str) -> dict[str, Any]:
         """Load training checkpoint."""
         checkpoint = torch.load(path, map_location=self.device)
         self.model.load_state_dict(checkpoint["model_state_dict"])
