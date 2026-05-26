@@ -1,6 +1,7 @@
 """Manual smoke test for Cambium library."""
 import torch
 from transformers import AutoModelForCausalLM
+
 from cambium import ExpandableModel, InterleavedExpansion
 
 print("=" * 50)

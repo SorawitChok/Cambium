@@ -4,8 +4,9 @@ Trains only the newly added layers (warmup phase) on a toy dataset.
 This demonstrates the standard post-expansion training recipe.
 """
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader, Dataset
 from transformers import AutoTokenizer
+
 from cambium import ExpandableModel, InterleavedExpansion
 from cambium.training.staged_trainer import StagedTrainer, TrainingPhase
 
@@ -28,6 +29,7 @@ print(f"\n[2] Creating toy dataset")
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token
+
 
 class ToyTextDataset(Dataset):
     def __init__(self, tokenizer, num_samples=64, seq_length=64):
@@ -59,17 +61,20 @@ class ToyTextDataset(Dataset):
             # Mask padding positions in labels so they don't compute loss
             labels = input_ids.clone()
             labels[attention_mask == 0] = -100
-            self.samples.append({
-                "input_ids": input_ids,
-                "attention_mask": attention_mask,
-                "labels": labels,
-            })
+            self.samples.append(
+                {
+                    "input_ids": input_ids,
+                    "attention_mask": attention_mask,
+                    "labels": labels,
+                }
+            )
 
     def __len__(self):
         return len(self.samples)
 
     def __getitem__(self, idx):
         return self.samples[idx]
+
 
 # 3. Build dataloaders
 print(f"\n[3] Building dataloaders")
@@ -101,7 +106,9 @@ history = trainer.train(train_loader)
 # 7. Print results
 print(f"\n[7] Training complete")
 for phase_hist in history["phases"]:
-    print(f"    Phase '{phase_hist['name']}' -> steps: {phase_hist['steps']}, final loss: {phase_hist['losses'][-1]:.4f}")
+    print(
+        f"    Phase '{phase_hist['name']}' -> steps: {phase_hist['steps']}, final loss: {phase_hist['losses'][-1]:.4f}"
+    )
 
 # 8. Save the warmed-up model
 print(f"\n[8] Saving warmed-up model")
