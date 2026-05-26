@@ -143,7 +143,7 @@ class CatastrophicForgettingDetector:
 
             if not is_acceptable:
                 logger.warning(
-                    f"High KL divergence detected: {kl_value:.4f} " f"(threshold: {self.threshold})"
+                    f"High KL divergence detected: {kl_value:.4f} (threshold: {self.threshold})"
                 )
 
             return is_acceptable, kl_value
