@@ -5,15 +5,15 @@ Inserts new transformer blocks between existing ones,
 enabling increased capacity while preserving original weights.
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Callable
 import logging
+from dataclasses import dataclass, field
+from typing import Any, Callable, Dict, List, Optional
 
 import torch
 from torch import nn
 
 from cambium.core.expansion import ExpansionEngine
-from cambium.core.initialization import Initializer, InitializationStrategy
+from cambium.core.initialization import InitializationStrategy, Initializer
 
 logger = logging.getLogger(__name__)
 

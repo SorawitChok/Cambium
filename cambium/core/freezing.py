@@ -4,7 +4,8 @@ Advanced freezing and unfreezing utilities for staged training.
 
 import logging
 import re
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any, Dict, List, Optional, Tuple
+
 import torch
 from torch import nn
 

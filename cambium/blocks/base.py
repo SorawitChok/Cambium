@@ -5,9 +5,9 @@ Provides the contract that custom blocks must follow and
 utility wrappers for inserting them into models.
 """
 
+import logging
 from abc import ABC, abstractmethod
 from typing import ClassVar, List
-import logging
 
 import torch
 from torch import nn

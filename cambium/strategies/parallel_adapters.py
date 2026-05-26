@@ -5,16 +5,16 @@ Adds parallel pathways alongside existing transformer blocks,
 similar to MoE-lite or parallel adapter architectures.
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Callable
 import logging
+from dataclasses import dataclass, field
+from typing import Any, Callable, Dict, List, Optional
 
 import torch
-from torch import nn
 import torch.nn.functional as F
+from torch import nn
 
 from cambium.core.expansion import ExpansionEngine
-from cambium.core.initialization import Initializer, InitializationStrategy
+from cambium.core.initialization import InitializationStrategy, Initializer
 
 logger = logging.getLogger(__name__)
 

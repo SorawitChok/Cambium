@@ -2,12 +2,12 @@
 Validation utilities for expanded models.
 """
 
-from typing import Dict, List, Optional, Tuple, Any, Callable
 import logging
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import torch
-from torch import nn
 import torch.nn.functional as F
+from torch import nn
 
 logger = logging.getLogger(__name__)
 

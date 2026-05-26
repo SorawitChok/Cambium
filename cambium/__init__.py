@@ -7,31 +7,31 @@ and architecture blocks to existing LLMs while leveraging pretrained weights.
 
 __version__ = "0.1.0"
 
-from cambium.core.expansion import ExpansionEngine
-from cambium.core.freezing import FreezingManager
-from cambium.core.initialization import Initializer, InitializationStrategy
-from cambium.strategies.block_expansion import InterleavedExpansion
-from cambium.strategies.width_expansion import WidthExpansion
-from cambium.strategies.parallel_adapters import ParallelAdapterExpansion
-from cambium.strategies.custom_expansion import CustomBlockExpansion
 from cambium.blocks.base import CambiumBlock, ResidualWrapper
 from cambium.blocks.templates import (
-    SwiGLUBlock,
-    MultiQueryAttentionBlock,
-    GatedResidualBlock,
     CrossAttentionBlock,
+    GatedResidualBlock,
+    MultiQueryAttentionBlock,
     RetentionBlock,
+    SwiGLUBlock,
 )
-from cambium.models.expandable import ExpandableModel
-from cambium.training.staged_trainer import StagedTrainer, TrainingPhase
-from cambium.training.utilities import TrainingUtilities
+from cambium.core.expansion import ExpansionEngine
+from cambium.core.freezing import FreezingManager
+from cambium.core.initialization import InitializationStrategy, Initializer
 from cambium.exceptions import (
-    CambiumError,
     BlockValidationError,
-    ShapeMismatchError,
+    CambiumError,
     ConfigMismatchError,
     ExpansionError,
+    ShapeMismatchError,
 )
+from cambium.models.expandable import ExpandableModel
+from cambium.strategies.block_expansion import InterleavedExpansion
+from cambium.strategies.custom_expansion import CustomBlockExpansion
+from cambium.strategies.parallel_adapters import ParallelAdapterExpansion
+from cambium.strategies.width_expansion import WidthExpansion
+from cambium.training.staged_trainer import StagedTrainer, TrainingPhase
+from cambium.training.utilities import TrainingUtilities
 
 __all__ = [
     # Core components

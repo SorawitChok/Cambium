@@ -2,9 +2,9 @@
 StagedTrainer - Orchestrates multi-phase training with progressive unfreezing.
 """
 
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Callable, Union
 import logging
+from dataclasses import dataclass, field
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import torch
 from torch import nn

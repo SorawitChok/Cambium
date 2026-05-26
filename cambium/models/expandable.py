@@ -5,10 +5,10 @@ Provides an explicit, object-oriented interface for loading models
 and applying expansion strategies.
 """
 
-from typing import Any, Dict, List, Optional, Union
-import logging
 import json
+import logging
 import os
+from typing import Any, Dict, List, Optional, Union
 
 import torch
 from torch import nn
@@ -85,7 +85,7 @@ class ExpandableModel:
             ExpandableModel instance
         """
         try:
-            from transformers import AutoModelForCausalLM, AutoConfig
+            from transformers import AutoConfig, AutoModelForCausalLM
         except ImportError:
             raise ImportError(
                 "transformers library required. Install with: pip install transformers"

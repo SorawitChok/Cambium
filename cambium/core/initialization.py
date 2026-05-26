@@ -2,12 +2,13 @@
 Initialization strategies for new model components.
 """
 
-from enum import Enum
 import logging
-from typing import Optional, List
+from enum import Enum
+from typing import List, Optional
+
 import torch
-from torch import nn
 import torch.nn.functional as F
+from torch import nn
 
 logger = logging.getLogger(__name__)
 

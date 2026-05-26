@@ -2,13 +2,13 @@
 Custom block definitions and templates for Cambium.
 """
 
-from cambium.blocks.base import CambiumBlock, ResidualWrapper, BlockOutputWrapper
+from cambium.blocks.base import BlockOutputWrapper, CambiumBlock, ResidualWrapper
 from cambium.blocks.templates import (
-    SwiGLUBlock,
-    MultiQueryAttentionBlock,
-    GatedResidualBlock,
     CrossAttentionBlock,
+    GatedResidualBlock,
+    MultiQueryAttentionBlock,
     RetentionBlock,
+    SwiGLUBlock,
 )
 
 __all__ = [

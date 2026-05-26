@@ -5,9 +5,9 @@ import torch
 from torch import nn
 
 from cambium.core.initialization import (
-    Initializer,
-    InitializationStrategy,
     IdentityInitializer,
+    InitializationStrategy,
+    Initializer,
 )
 
 

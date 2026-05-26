@@ -4,16 +4,15 @@ import pytest
 import torch
 from torch import nn
 
-from cambium.strategies.custom_expansion import CustomBlockExpansion
 from cambium.blocks.base import CambiumBlock, ResidualWrapper
 from cambium.blocks.templates import (
-    SwiGLUBlock,
-    GatedResidualBlock,
     CrossAttentionBlock,
+    GatedResidualBlock,
+    SwiGLUBlock,
 )
-from cambium.exceptions import BlockValidationError
 from cambium.core.expansion import ExpansionEngine
-
+from cambium.exceptions import BlockValidationError
+from cambium.strategies.custom_expansion import CustomBlockExpansion
 
 # --- Test fixtures ---
 

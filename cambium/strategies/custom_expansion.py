@@ -6,16 +6,16 @@ Supports three input modes: block class, block factory, or pre-created instances
 """
 
 import inspect
-from dataclasses import dataclass, field
-from typing import Callable, Dict, List, Optional, Any, Type
 import logging
+from dataclasses import dataclass, field
+from typing import Any, Callable, Dict, List, Optional, Type
 
 import torch
 from torch import nn
 
-from cambium.core.expansion import ExpansionEngine
-from cambium.core.initialization import Initializer, InitializationStrategy
 from cambium.blocks.base import CambiumBlock, ResidualWrapper
+from cambium.core.expansion import ExpansionEngine
+from cambium.core.initialization import InitializationStrategy, Initializer
 from cambium.exceptions import BlockValidationError, ShapeMismatchError
 
 logger = logging.getLogger(__name__)

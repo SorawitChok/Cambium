@@ -2,8 +2,8 @@
 Training utilities for integration with HF Trainer, TRL, and custom loops.
 """
 
-from typing import Any, Callable, Dict, List, Optional, Union
 import logging
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import torch
 from torch import nn
@@ -132,7 +132,7 @@ class TrainingUtilities:
             Model ready for PEFT
         """
         try:
-            from peft import get_peft_model, LoraConfig
+            from peft import LoraConfig, get_peft_model
         except ImportError:
             logger.warning("PEFT library not available. Install with: pip install peft")
             return model
