@@ -72,6 +72,7 @@ class TestInitializer:
 
     def test_smart_init_for_block(self):
         """Test smart initialization for transformer block."""
+
         # Create a simple transformer-like block
         class SimpleBlock(nn.Module):
             def __init__(self):

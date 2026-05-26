@@ -140,7 +140,9 @@ class WidthExpansion:
             if down_proj.weight.shape[0] == old_dim:
                 self._expand_linear_weight(down_proj, old_dim, new_dim, axis=0)
 
-    def _expand_ffn_layers(self, model: nn.Module, old_intermediate: int, new_intermediate: int) -> None:
+    def _expand_ffn_layers(
+        self, model: nn.Module, old_intermediate: int, new_intermediate: int
+    ) -> None:
         """Expand FFN intermediate dimensions."""
         if not hasattr(model, "model") or not hasattr(model.model, "layers"):
             return
@@ -159,7 +161,9 @@ class WidthExpansion:
             if hasattr(mlp, "down_proj"):
                 down_proj = mlp.down_proj
                 if down_proj.weight.shape[1] == old_intermediate:
-                    self._expand_linear_weight(down_proj, old_intermediate, new_intermediate, axis=1)
+                    self._expand_linear_weight(
+                        down_proj, old_intermediate, new_intermediate, axis=1
+                    )
 
     def _expand_layer_norm(self, layer: nn.Module, old_dim: int, new_dim: int) -> None:
         """Expand LayerNorm/RMSNorm weights."""
@@ -186,7 +190,9 @@ class WidthExpansion:
         old_weight = linear.weight.data
 
         if axis == 0:  # Expand output dimension
-            new_weight = torch.zeros(new_dim, old_weight.shape[1], device=old_weight.device, dtype=old_weight.dtype)
+            new_weight = torch.zeros(
+                new_dim, old_weight.shape[1], device=old_weight.device, dtype=old_weight.dtype
+            )
 
             if self.initialization == "copy":
                 new_weight[:old_dim, :] = old_weight
@@ -197,10 +203,15 @@ class WidthExpansion:
                 # New dimensions are already zeros
             elif self.initialization == "noise":
                 new_weight[:old_dim, :] = old_weight
-                new_weight[old_dim:, :] = torch.randn(
-                    new_dim - old_dim, old_weight.shape[1],
-                    device=old_weight.device, dtype=old_weight.dtype
-                ) * 0.01
+                new_weight[old_dim:, :] = (
+                    torch.randn(
+                        new_dim - old_dim,
+                        old_weight.shape[1],
+                        device=old_weight.device,
+                        dtype=old_weight.dtype,
+                    )
+                    * 0.01
+                )
 
             linear.weight = nn.Parameter(new_weight)
 
@@ -216,7 +227,9 @@ class WidthExpansion:
             linear.out_features = new_dim
 
         else:  # axis == 1, expand input dimension
-            new_weight = torch.zeros(old_weight.shape[0], new_dim, device=old_weight.device, dtype=old_weight.dtype)
+            new_weight = torch.zeros(
+                old_weight.shape[0], new_dim, device=old_weight.device, dtype=old_weight.dtype
+            )
 
             if self.initialization == "copy":
                 new_weight[:, :old_dim] = old_weight
@@ -226,10 +239,15 @@ class WidthExpansion:
                 new_weight[:, :old_dim] = old_weight
             elif self.initialization == "noise":
                 new_weight[:, :old_dim] = old_weight
-                new_weight[:, old_dim:] = torch.randn(
-                    old_weight.shape[0], new_dim - old_dim,
-                    device=old_weight.device, dtype=old_weight.dtype
-                ) * 0.01
+                new_weight[:, old_dim:] = (
+                    torch.randn(
+                        old_weight.shape[0],
+                        new_dim - old_dim,
+                        device=old_weight.device,
+                        dtype=old_weight.dtype,
+                    )
+                    * 0.01
+                )
 
             linear.weight = nn.Parameter(new_weight)
             linear.in_features = new_dim

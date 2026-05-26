@@ -44,7 +44,7 @@ def estimate_memory_usage(
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 
     # Model weights memory
-    model_memory = total_params * bytes_per_param / (1024 ** 3)
+    model_memory = total_params * bytes_per_param / (1024**3)
 
     # Activations (rough estimate)
     # For a transformer: ~batch_size * seq_len * hidden_dim * num_layers * 4 bytes
@@ -55,18 +55,16 @@ def estimate_memory_usage(
         hidden_size = 2048
         num_layers = 24
 
-    activation_memory = (
-        batch_size * sequence_length * hidden_size * num_layers * 4 / (1024 ** 3)
-    )
+    activation_memory = batch_size * sequence_length * hidden_size * num_layers * 4 / (1024**3)
 
     if gradient_checkpointing:
         activation_memory *= 0.3  # Roughly 70% savings
 
     # Gradients (same size as trainable params)
-    gradient_memory = trainable_params * bytes_per_param / (1024 ** 3)
+    gradient_memory = trainable_params * bytes_per_param / (1024**3)
 
     # Optimizer states (2x params for Adam)
-    optimizer_memory = trainable_params * bytes_per_param * 2 / (1024 ** 3)
+    optimizer_memory = trainable_params * bytes_per_param * 2 / (1024**3)
 
     # Total
     total_memory = model_memory + activation_memory + gradient_memory + optimizer_memory
@@ -99,10 +97,10 @@ def get_memory_profile(device: Optional[torch.device] = None) -> Dict[str, Any]:
 
     torch.cuda.synchronize(device)
 
-    allocated = torch.cuda.memory_allocated(device) / (1024 ** 3)
-    reserved = torch.cuda.memory_reserved(device) / (1024 ** 3)
-    max_allocated = torch.cuda.max_memory_allocated(device) / (1024 ** 3)
-    max_reserved = torch.cuda.max_memory_reserved(device) / (1024 ** 3)
+    allocated = torch.cuda.memory_allocated(device) / (1024**3)
+    reserved = torch.cuda.memory_reserved(device) / (1024**3)
+    max_allocated = torch.cuda.max_memory_allocated(device) / (1024**3)
+    max_reserved = torch.cuda.max_memory_reserved(device) / (1024**3)
 
     return {
         "cuda_available": True,

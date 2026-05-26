@@ -10,6 +10,7 @@ from cambium.strategies.block_expansion import InterleavedExpansion
 def _make_config(**overrides):
     """Create a minimal config compatible with HF LlamaDecoderLayer."""
     from transformers import LlamaConfig
+
     defaults = dict(
         vocab_size=100,
         hidden_size=32,
@@ -31,10 +32,9 @@ class MockModel:
             hidden_size=hidden_size,
         )
         self.model = type("Model", (), {})()
-        self.model.layers = nn.ModuleList([
-            nn.Linear(hidden_size, hidden_size)
-            for _ in range(num_layers)
-        ])
+        self.model.layers = nn.ModuleList(
+            [nn.Linear(hidden_size, hidden_size) for _ in range(num_layers)]
+        )
 
 
 class MockEngine:
@@ -50,12 +50,14 @@ class MockEngine:
             model.model.layers.insert(pos, new_block)
             self.inserted_positions.append(pos)
 
-        self.expansion_history.append({
-            "operation": "insert_blocks",
-            "positions": positions,
-            "original_length": len(model.model.layers) - len(positions),
-            "new_length": len(model.model.layers),
-        })
+        self.expansion_history.append(
+            {
+                "operation": "insert_blocks",
+                "positions": positions,
+                "original_length": len(model.model.layers) - len(positions),
+                "new_length": len(model.model.layers),
+            }
+        )
 
 
 class TestInterleavedExpansion:

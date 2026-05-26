@@ -5,6 +5,7 @@ Exception classes for Cambium.
 
 class CambiumError(Exception):
     """Base exception for Cambium."""
+
     pass
 
 
@@ -24,9 +25,7 @@ class ShapeMismatchError(CambiumError):
         self.expected = expected
         self.got = got
         self.block_idx = block_idx
-        super().__init__(
-            f"Block {block_idx} output shape {got} doesn't match expected {expected}"
-        )
+        super().__init__(f"Block {block_idx} output shape {got} doesn't match expected {expected}")
 
 
 class ConfigMismatchError(CambiumError):
@@ -35,11 +34,10 @@ class ConfigMismatchError(CambiumError):
     def __init__(self, missing_keys: list, available_keys: list):
         self.missing_keys = missing_keys
         self.available_keys = available_keys
-        super().__init__(
-            f"Missing config keys: {missing_keys}. Available: {available_keys}"
-        )
+        super().__init__(f"Missing config keys: {missing_keys}. Available: {available_keys}")
 
 
 class ExpansionError(CambiumError):
     """Error during model expansion."""
+
     pass

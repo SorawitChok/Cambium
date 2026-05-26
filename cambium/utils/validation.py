@@ -115,8 +115,9 @@ class CatastrophicForgettingDetector:
 
         with torch.no_grad():
             # Move batch to device
-            batch = {k: v.to(self.device) if isinstance(v, torch.Tensor) else v
-                    for k, v in batch.items()}
+            batch = {
+                k: v.to(self.device) if isinstance(v, torch.Tensor) else v for k, v in batch.items()
+            }
 
             # Get outputs from both models
             base_outputs = self.base_model(**batch)
@@ -142,8 +143,7 @@ class CatastrophicForgettingDetector:
 
             if not is_acceptable:
                 logger.warning(
-                    f"High KL divergence detected: {kl_value:.4f} "
-                    f"(threshold: {self.threshold})"
+                    f"High KL divergence detected: {kl_value:.4f} " f"(threshold: {self.threshold})"
                 )
 
             return is_acceptable, kl_value
@@ -193,6 +193,7 @@ def check_for_catastrophic_forgetting(
 
     # Default metric: perplexity
     if metric_fn is None:
+
         def metric_fn(model, batch):
             with torch.no_grad():
                 outputs = model(**batch)
@@ -214,6 +215,8 @@ def check_for_catastrophic_forgetting(
         "original_score": original_mean,
         "expanded_score": expanded_mean,
         "absolute_diff": abs(expanded_mean - original_mean),
-        "relative_diff": abs(expanded_mean - original_mean) / abs(original_mean) if original_mean != 0 else 0,
+        "relative_diff": abs(expanded_mean - original_mean) / abs(original_mean)
+        if original_mean != 0
+        else 0,
         "forgotten": expanded_mean > original_mean * 1.2,  # 20% degradation threshold
     }

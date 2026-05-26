@@ -162,9 +162,7 @@ class CustomBlockExpansion:
         # 8. Update config
         self._update_config(model, positions)
 
-        logger.info(
-            f"Custom block expansion complete: inserted {len(positions)} blocks"
-        )
+        logger.info(f"Custom block expansion complete: inserted {len(positions)} blocks")
         return model
 
     def _validate_inputs(self) -> None:
@@ -282,9 +280,7 @@ class CustomBlockExpansion:
         # Should not reach here after _validate_inputs
         raise ValueError("No block source provided")
 
-    def _validate_blocks(
-        self, blocks: List[nn.Module], model: nn.Module
-    ) -> None:
+    def _validate_blocks(self, blocks: List[nn.Module], model: nn.Module) -> None:
         """
         Validate that blocks are compatible with the model.
 
@@ -317,8 +313,7 @@ class CustomBlockExpansion:
 
                     # Check if **kwargs is accepted
                     has_var_keyword = any(
-                        p.kind == inspect.Parameter.VAR_KEYWORD
-                        for p in sig.parameters.values()
+                        p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values()
                     )
                     if not has_var_keyword:
                         logger.warning(
@@ -362,9 +357,7 @@ class CustomBlockExpansion:
                         f"The block may require additional arguments."
                     )
                 except Exception as e:
-                    logger.warning(
-                        f"Block {i}: forward() raised {type(e).__name__}: {e}"
-                    )
+                    logger.warning(f"Block {i}: forward() raised {type(e).__name__}: {e}")
             block_eval.train()
 
             # Check 3: Config key validation (CambiumBlock subclasses)
@@ -374,18 +367,18 @@ class CustomBlockExpansion:
                     if not hasattr(model.config, key):
                         missing.append(key)
                 if missing:
-                    available = list(model.config.to_dict().keys()) if hasattr(model.config, "to_dict") else []
+                    available = (
+                        list(model.config.to_dict().keys())
+                        if hasattr(model.config, "to_dict")
+                        else []
+                    )
                     errors.append(
                         f"Block {i}: requires config keys {missing} "
                         f"not found in model config. Available: {available[:20]}"
                     )
 
             # Check 4: NaN detection
-            has_nan = any(
-                torch.isnan(p).any().item()
-                for p in block.parameters()
-                if p.numel() > 0
-            )
+            has_nan = any(torch.isnan(p).any().item() for p in block.parameters() if p.numel() > 0)
             if has_nan:
                 errors.append(f"Block {i}: has NaN parameters after initialization")
 
@@ -398,9 +391,7 @@ class CustomBlockExpansion:
 
         logger.info(f"All {len(blocks)} blocks passed validation")
 
-    def _apply_initialization(
-        self, model: nn.Module, positions: List[int]
-    ) -> None:
+    def _apply_initialization(self, model: nn.Module, positions: List[int]) -> None:
         """Apply initialization strategy to the newly inserted blocks."""
         layers_module = self._get_layers_module(model)
 
@@ -409,9 +400,7 @@ class CustomBlockExpansion:
 
         if self.initialization == "custom":
             if self.custom_init_fn is None:
-                raise ValueError(
-                    "custom_init_fn must be provided when initialization='custom'"
-                )
+                raise ValueError("custom_init_fn must be provided when initialization='custom'")
             for i, block in enumerate(new_blocks):
                 # If wrapped in ResidualWrapper, initialize the inner block
                 inner = block.block if isinstance(block, ResidualWrapper) else block
@@ -449,13 +438,9 @@ class CustomBlockExpansion:
                 modules = list(inner.modules())[1:]  # Skip the block itself
                 initializer.apply(modules, strategy=strategy)
 
-            logger.debug(
-                f"Applied {self.initialization} initialization to block {i}"
-            )
+            logger.debug(f"Applied {self.initialization} initialization to block {i}")
 
-    def _update_config(
-        self, model: nn.Module, positions: List[int]
-    ) -> None:
+    def _update_config(self, model: nn.Module, positions: List[int]) -> None:
         """Update model config to reflect the custom blocks."""
         num_new = len(positions)
 
@@ -479,11 +464,13 @@ class CustomBlockExpansion:
                 inner = inner.block
             block_name = type(inner).__name__
 
-        custom_blocks.append({
-            "block_type": block_name,
-            "positions": positions.copy(),
-            "residual": self.residual_connection,
-            "initialization": self.initialization,
-        })
+        custom_blocks.append(
+            {
+                "block_type": block_name,
+                "positions": positions.copy(),
+                "residual": self.residual_connection,
+                "initialization": self.initialization,
+            }
+        )
 
         model.config._cambium_custom_blocks = custom_blocks

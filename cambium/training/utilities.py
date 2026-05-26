@@ -83,15 +83,15 @@ class TrainingUtilities:
                     assigned_params.add(id(param))
 
             if params:
-                param_groups.append({
-                    "params": params,
-                    "lr": lr,
-                    "weight_decay": weight_decay,
-                    "name": pattern,
-                })
-                logger.debug(
-                    f"LR group '{pattern}': {len(params)} params, lr={lr}"
+                param_groups.append(
+                    {
+                        "params": params,
+                        "lr": lr,
+                        "weight_decay": weight_decay,
+                        "name": pattern,
+                    }
                 )
+                logger.debug(f"LR group '{pattern}': {len(params)} params, lr={lr}")
 
         # Add remaining parameters with default LR
         remaining = []
@@ -102,12 +102,14 @@ class TrainingUtilities:
 
         if remaining:
             default_lr = 1e-4
-            param_groups.append({
-                "params": remaining,
-                "lr": default_lr,
-                "weight_decay": weight_decay,
-                "name": "default",
-            })
+            param_groups.append(
+                {
+                    "params": remaining,
+                    "lr": default_lr,
+                    "weight_decay": weight_decay,
+                    "name": "default",
+                }
+            )
             logger.debug(f"Default group: {len(remaining)} params, lr={default_lr}")
 
         return optimizer_class(param_groups)
@@ -179,7 +181,9 @@ class TrainingUtilities:
 
         # Mixed precision (requires Accelerate or PyTorch AMP)
         if mixed_precision in ["fp16", "bf16"]:
-            logger.info(f"Mixed precision ({mixed_precision}) should be configured in training loop")
+            logger.info(
+                f"Mixed precision ({mixed_precision}) should be configured in training loop"
+            )
 
     @staticmethod
     def get_staged_lr_schedule(
@@ -320,11 +324,13 @@ class TrainingUtilities:
                 if param.requires_grad and re.search(r"new_|expanded_", name):
                     new_params.append(param)
 
-            groups.append({
-                "params": new_params,
-                "lr": base_lr,
-                "name": "new_layers",
-            })
+            groups.append(
+                {
+                    "params": new_params,
+                    "lr": base_lr,
+                    "name": "new_layers",
+                }
+            )
 
         elif phase == 2:
             # Phase 2: New layers + last quarter of original
@@ -341,16 +347,20 @@ class TrainingUtilities:
                     # Assuming 24 layers, last 6
                     tail_params.append(param)
 
-            groups.append({
-                "params": new_params,
-                "lr": base_lr,
-                "name": "new_layers",
-            })
-            groups.append({
-                "params": tail_params,
-                "lr": base_lr * 0.5,
-                "name": "tail_original",
-            })
+            groups.append(
+                {
+                    "params": new_params,
+                    "lr": base_lr,
+                    "name": "new_layers",
+                }
+            )
+            groups.append(
+                {
+                    "params": tail_params,
+                    "lr": base_lr * 0.5,
+                    "name": "tail_original",
+                }
+            )
 
         else:
             # Phase 3: All layers with discriminative LR
@@ -359,9 +369,7 @@ class TrainingUtilities:
                 r"model\\.layers": base_lr * 0.5,
                 r"new_|expanded_": base_lr,
             }
-            return TrainingUtilities.get_optimizer_with_discriminative_lr(
-                model, lr_config
-            )
+            return TrainingUtilities.get_optimizer_with_discriminative_lr(model, lr_config)
 
         return groups
 
@@ -384,6 +392,6 @@ class TrainingUtilities:
             print(f"Number of layers: {len(model.model.layers)}")
 
         # Model size estimate
-        param_size_mb = total_params * 4 / (1024 ** 2)  # Assuming fp32
+        param_size_mb = total_params * 4 / (1024**2)  # Assuming fp32
         print(f"Model size (fp32): ~{param_size_mb:.1f} MB")
         print("=" * 60)

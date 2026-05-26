@@ -43,9 +43,7 @@ class SwiGLUBlock(CambiumBlock):
     def __init__(self, config, layer_idx: int = 0):
         super().__init__()
         self.hidden_size = config.hidden_size
-        self.intermediate_size = getattr(
-            config, "intermediate_size", self.hidden_size * 4
-        )
+        self.intermediate_size = getattr(config, "intermediate_size", self.hidden_size * 4)
         self.layer_idx = layer_idx
 
         self.gate_proj = nn.Linear(self.hidden_size, self.intermediate_size, bias=False)
@@ -95,9 +93,7 @@ class MultiQueryAttentionBlock(CambiumBlock):
         batch_size, seq_len, _ = x.shape
 
         # Q: [batch, num_heads, seq, head_dim]
-        q = self.q_proj(x).view(
-            batch_size, seq_len, self.num_heads, self.head_dim
-        ).transpose(1, 2)
+        q = self.q_proj(x).view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
 
         # K, V: [batch, 1, seq, head_dim] (single KV head)
         k = self.k_proj(x).unsqueeze(1)
@@ -108,7 +104,7 @@ class MultiQueryAttentionBlock(CambiumBlock):
         v = v.expand(-1, self.num_heads, -1, -1)
 
         # Scaled dot-product attention
-        scale = self.head_dim ** -0.5
+        scale = self.head_dim**-0.5
         attn_weights = torch.matmul(q, k.transpose(-2, -1)) * scale
         attn_weights = F.softmax(attn_weights, dim=-1)
 
@@ -138,9 +134,7 @@ class GatedResidualBlock(CambiumBlock):
     def __init__(self, config, layer_idx: int = 0):
         super().__init__()
         hidden_size = config.hidden_size
-        intermediate_size = getattr(
-            config, "intermediate_size", hidden_size * 2
-        )
+        intermediate_size = getattr(config, "intermediate_size", hidden_size * 2)
         self.layer_idx = layer_idx
 
         self.proj_up = nn.Linear(hidden_size, intermediate_size * 2, bias=False)
@@ -196,17 +190,11 @@ class CrossAttentionBlock(CambiumBlock):
 
         batch_size, seq_len, _ = x.shape
 
-        q = self.q_proj(x).view(
-            batch_size, seq_len, self.num_heads, self.head_dim
-        ).transpose(1, 2)
-        k = self.k_proj(x).view(
-            batch_size, seq_len, self.num_heads, self.head_dim
-        ).transpose(1, 2)
-        v = self.v_proj(x).view(
-            batch_size, seq_len, self.num_heads, self.head_dim
-        ).transpose(1, 2)
+        q = self.q_proj(x).view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
+        k = self.k_proj(x).view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
+        v = self.v_proj(x).view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
 
-        scale = self.head_dim ** -0.5
+        scale = self.head_dim**-0.5
         attn_weights = torch.matmul(q, k.transpose(-2, -1)) * scale
         attn_weights = F.softmax(attn_weights, dim=-1)
 
@@ -264,15 +252,9 @@ class RetentionBlock(CambiumBlock):
         x = self.layer_norm(hidden_states)
         batch_size, seq_len, _ = x.shape
 
-        q = self.q_proj(x).view(
-            batch_size, seq_len, self.num_heads, self.head_dim
-        ).transpose(1, 2)
-        k = self.k_proj(x).view(
-            batch_size, seq_len, self.num_heads, self.head_dim
-        ).transpose(1, 2)
-        v = self.v_proj(x).view(
-            batch_size, seq_len, self.num_heads, self.head_dim
-        ).transpose(1, 2)
+        q = self.q_proj(x).view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
+        k = self.k_proj(x).view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
+        v = self.v_proj(x).view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
 
         # Retention: Q * (K^T * decay_matrix) * V
         # Build decay matrix
@@ -287,7 +269,7 @@ class RetentionBlock(CambiumBlock):
         retention = torch.matmul(q, k.transpose(-2, -1))
         retention = retention * decay_matrix.unsqueeze(0).unsqueeze(0)
         # No softmax — retention uses element-wise scaling
-        retention = retention / (self.head_dim ** 0.5)
+        retention = retention / (self.head_dim**0.5)
 
         output = torch.matmul(retention, v)
         output = output.transpose(1, 2).contiguous()

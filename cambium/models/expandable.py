@@ -119,10 +119,12 @@ class ExpandableModel:
         expander.expand(self.model, self.engine)
 
         # Track expansion
-        self.expansions.append({
-            "strategy": type(expander).__name__,
-            "config": getattr(expander, "__dict__", {}),
-        })
+        self.expansions.append(
+            {
+                "strategy": type(expander).__name__,
+                "config": getattr(expander, "__dict__", {}),
+            }
+        )
 
         self.is_expanded = True
 

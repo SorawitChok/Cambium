@@ -44,8 +44,7 @@ class FreezingManager:
     def _record_original_state(self) -> None:
         """Record the original requires_grad state of all parameters."""
         self.original_requires_grad = {
-            name: param.requires_grad
-            for name, param in self.model.named_parameters()
+            name: param.requires_grad for name, param in self.model.named_parameters()
         }
 
     def freeze_all(self) -> None:
@@ -133,7 +132,9 @@ class FreezingManager:
         self.freeze_by_pattern(r".*lm_head.*")
         logger.debug("Froze embedding and lm_head layers")
 
-    def unfreeze_layer_range(self, start_idx: int, end_idx: int, layer_pattern: str = r"model\.layers\.(\d+)") -> None:
+    def unfreeze_layer_range(
+        self, start_idx: int, end_idx: int, layer_pattern: str = r"model\.layers\.(\d+)"
+    ) -> None:
         """
         Unfreeze a specific range of transformer layers.
 
@@ -218,7 +219,8 @@ class FreezingManager:
             "trainable_names": trainable,
             "frozen_names": frozen,
             "percent_trainable": 100 * trainable_count / (trainable_count + frozen_count)
-            if (trainable_count + frozen_count) > 0 else 0,
+            if (trainable_count + frozen_count) > 0
+            else 0,
         }
 
     def get_parameter_groups_for_discriminative_lr(
@@ -268,7 +270,9 @@ class FreezingManager:
         print("=" * 60)
         print("Parameter Freezing Status")
         print("=" * 60)
-        print(f"Trainable parameters: {info['trainable_params']:,} ({info['percent_trainable']:.2f}%)")
+        print(
+            f"Trainable parameters: {info['trainable_params']:,} ({info['percent_trainable']:.2f}%)"
+        )
         print(f"Frozen parameters: {info['frozen_params']:,}")
         print(f"Trainable parameter groups:")
         for name in info["trainable_names"]:
@@ -277,10 +281,7 @@ class FreezingManager:
 
     def save_state(self, path: str) -> None:
         """Save the current freezing state to a file."""
-        state = {
-            name: param.requires_grad
-            for name, param in self.model.named_parameters()
-        }
+        state = {name: param.requires_grad for name, param in self.model.named_parameters()}
         torch.save(state, path)
         logger.info(f"Saved freezing state to {path}")
 

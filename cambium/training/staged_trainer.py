@@ -203,9 +203,9 @@ class StagedTrainer:
 
             history["phases"].append(phase_history)
 
-        logger.info("\n" + "="*60)
+        logger.info("\n" + "=" * 60)
         logger.info("Training Complete!")
-        logger.info("="*60)
+        logger.info("=" * 60)
 
         return history
 
@@ -228,7 +228,9 @@ class StagedTrainer:
         # Log status
         info = self.freezing_manager.get_trainable_params()
         logger.info(f"Phase config applied:")
-        logger.info(f"  Trainable params: {info['trainable_params']:,} ({info['percent_trainable']:.2f}%)")
+        logger.info(
+            f"  Trainable params: {info['trainable_params']:,} ({info['percent_trainable']:.2f}%)"
+        )
         logger.info(f"  Frozen params: {info['frozen_params']:,}")
 
     def _create_optimizer(self, phase: TrainingPhase) -> Optimizer:
@@ -238,10 +240,12 @@ class StagedTrainer:
                 phase.discriminative_lr
             )
         else:
-            param_groups = [{
-                "params": [p for p in self.model.parameters() if p.requires_grad],
-                "lr": phase.lr,
-            }]
+            param_groups = [
+                {
+                    "params": [p for p in self.model.parameters() if p.requires_grad],
+                    "lr": phase.lr,
+                }
+            ]
 
         return self.optimizer_class(param_groups, lr=phase.lr)
 
@@ -271,11 +275,12 @@ class StagedTrainer:
             for batch_idx, batch in enumerate(train_dataloader):
                 # Move batch to device
                 if isinstance(batch, dict):
-                    batch = {k: v.to(self.device) if isinstance(v, torch.Tensor) else v
-                            for k, v in batch.items()}
+                    batch = {
+                        k: v.to(self.device) if isinstance(v, torch.Tensor) else v
+                        for k, v in batch.items()
+                    }
                 elif isinstance(batch, (list, tuple)):
-                    batch = [v.to(self.device) if isinstance(v, torch.Tensor) else v
-                            for v in batch]
+                    batch = [v.to(self.device) if isinstance(v, torch.Tensor) else v for v in batch]
 
                 # Forward pass
                 loss = self._compute_loss(batch)
@@ -344,18 +349,19 @@ class StagedTrainer:
             for batch in dataloader:
                 # Move batch to device
                 if isinstance(batch, dict):
-                    batch = {k: v.to(self.device) if isinstance(v, torch.Tensor) else v
-                            for k, v in batch.items()}
+                    batch = {
+                        k: v.to(self.device) if isinstance(v, torch.Tensor) else v
+                        for k, v in batch.items()
+                    }
                 elif isinstance(batch, (list, tuple)):
-                    batch = [v.to(self.device) if isinstance(v, torch.Tensor) else v
-                            for v in batch]
+                    batch = [v.to(self.device) if isinstance(v, torch.Tensor) else v for v in batch]
 
                 loss = self._compute_loss(batch)
                 total_loss += loss.item()
                 num_batches += 1
 
         self.model.train()
-        return total_loss / num_batches if num_batches > 0 else float('inf')
+        return total_loss / num_batches if num_batches > 0 else float("inf")
 
     def save_checkpoint(self, path: str, metadata: Optional[Dict] = None) -> None:
         """Save training checkpoint."""

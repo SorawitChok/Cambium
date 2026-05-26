@@ -150,12 +150,15 @@ class InterleavedExpansion:
         def create_block() -> nn.Module:
             if model_type in ["llama", "mistral"]:
                 from transformers.models.llama.modeling_llama import LlamaDecoderLayer
+
                 return LlamaDecoderLayer(config, layer_idx=0)
             elif model_type == "gemma":
                 from transformers.models.gemma.modeling_gemma import GemmaDecoderLayer
+
                 return GemmaDecoderLayer(config, layer_idx=0)
             elif model_type == "qwen2":
                 from transformers.models.qwen2.modeling_qwen2 import Qwen2DecoderLayer
+
                 return Qwen2DecoderLayer(config, layer_idx=0)
             else:
                 raise ValueError(f"Unsupported model type: {model_type}")
@@ -240,12 +243,15 @@ class AppendExpansion:
         def create_block() -> nn.Module:
             if model_type in ["llama", "mistral"]:
                 from transformers.models.llama.modeling_llama import LlamaDecoderLayer
+
                 return LlamaDecoderLayer(config, layer_idx=0)
             elif model_type == "gemma":
                 from transformers.models.gemma.modeling_gemma import GemmaDecoderLayer
+
                 return GemmaDecoderLayer(config, layer_idx=0)
             elif model_type == "qwen2":
                 from transformers.models.qwen2.modeling_qwen2 import Qwen2DecoderLayer
+
                 return Qwen2DecoderLayer(config, layer_idx=0)
             else:
                 raise ValueError(f"Unsupported model type: {model_type}")

@@ -23,19 +23,22 @@ class SimpleModel(nn.Module):
 
     def __init__(self, num_layers=4, hidden_size=32):
         super().__init__()
-        self.config = type("Config", (), {
-            "hidden_size": hidden_size,
-            "num_hidden_layers": num_layers,
-            "num_attention_heads": 4,
-            "intermediate_size": hidden_size * 4,
-            "model_type": "test",
-            "to_dict": lambda self: {"hidden_size": hidden_size},
-        })()
+        self.config = type(
+            "Config",
+            (),
+            {
+                "hidden_size": hidden_size,
+                "num_hidden_layers": num_layers,
+                "num_attention_heads": 4,
+                "intermediate_size": hidden_size * 4,
+                "model_type": "test",
+                "to_dict": lambda self: {"hidden_size": hidden_size},
+            },
+        )()
         self.model = nn.Module()
-        self.model.layers = nn.ModuleList([
-            nn.Linear(hidden_size, hidden_size)
-            for _ in range(num_layers)
-        ])
+        self.model.layers = nn.ModuleList(
+            [nn.Linear(hidden_size, hidden_size) for _ in range(num_layers)]
+        )
         self.lm_head = nn.Linear(hidden_size, 100)
 
     def forward(self, x):
@@ -292,10 +295,7 @@ class TestCustomBlockExpansionBlockInstances:
         engine = ExpansionEngine()
         config = model.config
 
-        blocks = [
-            SimpleCambiumBlock(config, layer_idx=i)
-            for i in range(2)
-        ]
+        blocks = [SimpleCambiumBlock(config, layer_idx=i) for i in range(2)]
 
         expander = CustomBlockExpansion(
             block_instances=blocks,
@@ -509,10 +509,14 @@ class TestTemplateBlocks:
 
     def test_cross_attention_block_forward(self):
         """CrossAttentionBlock forward pass works."""
-        config = type("Config", (), {
-            "hidden_size": 32,
-            "num_attention_heads": 4,
-        })()
+        config = type(
+            "Config",
+            (),
+            {
+                "hidden_size": 32,
+                "num_attention_heads": 4,
+            },
+        )()
         block = CrossAttentionBlock(config)
         x = torch.randn(1, 10, 32)
         with torch.no_grad():
@@ -521,11 +525,15 @@ class TestTemplateBlocks:
 
     def test_template_blocks_accept_kwargs(self):
         """Template blocks accept **kwargs."""
-        config = type("Config", (), {
-            "hidden_size": 32,
-            "intermediate_size": 64,
-            "num_attention_heads": 4,
-        })()
+        config = type(
+            "Config",
+            (),
+            {
+                "hidden_size": 32,
+                "intermediate_size": 64,
+                "num_attention_heads": 4,
+            },
+        )()
         block = SwiGLUBlock(config)
         x = torch.randn(1, 10, 32)
         with torch.no_grad():
@@ -552,6 +560,7 @@ class TestCustomBlockExpansionIntegration:
         expander.expand(model, engine)
 
         from cambium.core.freezing import FreezingManager
+
         fm = FreezingManager(model)
 
         # Freeze all then count trainable

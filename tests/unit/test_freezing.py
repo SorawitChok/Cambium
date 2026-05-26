@@ -13,12 +13,8 @@ class SimpleModel(nn.Module):
     def __init__(self):
         super().__init__()
         self.embed = nn.Embedding(100, 32)
-        self.layers = nn.ModuleList([
-            nn.Linear(32, 32) for _ in range(4)
-        ])
-        self.new_layers = nn.ModuleList([
-            nn.Linear(32, 32) for _ in range(2)
-        ])
+        self.layers = nn.ModuleList([nn.Linear(32, 32) for _ in range(4)])
+        self.new_layers = nn.ModuleList([nn.Linear(32, 32) for _ in range(2)])
         self.lm_head = nn.Linear(32, 100)
 
     def forward(self, x):

@@ -133,7 +133,7 @@ class ParallelAttentionAdapter(nn.Module):
         v = v.view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
 
         # Attention
-        attn_weights = torch.matmul(q, k.transpose(-2, -1)) / (self.head_dim ** 0.5)
+        attn_weights = torch.matmul(q, k.transpose(-2, -1)) / (self.head_dim**0.5)
         attn_weights = F.softmax(attn_weights, dim=-1)
         attn_output = torch.matmul(attn_weights, v)
 
@@ -186,8 +186,7 @@ class ParallelAdapterExpansion:
             The augmented model
         """
         logger.info(
-            f"Adding {self.adapter_type} adapters with "
-            f"bottleneck_dim={self.bottleneck_dim}"
+            f"Adding {self.adapter_type} adapters with " f"bottleneck_dim={self.bottleneck_dim}"
         )
 
         layers_module = self._get_layers_module(model)

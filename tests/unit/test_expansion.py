@@ -12,15 +12,18 @@ class SimpleModel(nn.Module):
 
     def __init__(self, num_layers=4, hidden_size=32):
         super().__init__()
-        self.config = type("Config", (), {
-            "hidden_size": hidden_size,
-            "num_hidden_layers": num_layers,
-        })()
+        self.config = type(
+            "Config",
+            (),
+            {
+                "hidden_size": hidden_size,
+                "num_hidden_layers": num_layers,
+            },
+        )()
         self.model = nn.Module()
-        self.model.layers = nn.ModuleList([
-            nn.Linear(hidden_size, hidden_size)
-            for _ in range(num_layers)
-        ])
+        self.model.layers = nn.ModuleList(
+            [nn.Linear(hidden_size, hidden_size) for _ in range(num_layers)]
+        )
         self.lm_head = nn.Linear(hidden_size, 100)
 
     def forward(self, x):
@@ -144,8 +147,7 @@ class TestExpansionEngine:
 
         # Only the newly inserted blocks should have the tag
         tagged_count = sum(
-            1 for layer in model.model.layers
-            if getattr(layer, "_cambium_new", False)
+            1 for layer in model.model.layers if getattr(layer, "_cambium_new", False)
         )
         assert tagged_count == 2
 

@@ -60,9 +60,7 @@ class ExpansionEngine:
         # Validate positions
         for pos in positions:
             if pos < 0 or pos > original_length:
-                raise ValueError(
-                    f"Invalid position {pos}. Must be between 0 and {original_length}"
-                )
+                raise ValueError(f"Invalid position {pos}. Must be between 0 and {original_length}")
 
         # Sort positions in descending order to maintain indices during insertion
         sorted_positions = sorted(positions, reverse=True)
@@ -85,12 +83,14 @@ class ExpansionEngine:
                     submodule.layer_idx = idx
 
         # Record expansion
-        self.expansion_history.append({
-            "operation": "insert_blocks",
-            "positions": positions.copy(),
-            "original_length": original_length,
-            "new_length": len(layers_module),
-        })
+        self.expansion_history.append(
+            {
+                "operation": "insert_blocks",
+                "positions": positions.copy(),
+                "original_length": original_length,
+                "new_length": len(layers_module),
+            }
+        )
 
         logger.info(
             f"Inserted {len(positions)} blocks at positions {positions}. "
@@ -128,12 +128,14 @@ class ExpansionEngine:
         else:
             raise ValueError(f"Cannot expand dimensions of {type(module)}")
 
-        self.expansion_history.append({
-            "operation": "expand_dimensions",
-            "old_dim": old_dim,
-            "new_dim": new_dim,
-            "axis": axis,
-        })
+        self.expansion_history.append(
+            {
+                "operation": "expand_dimensions",
+                "old_dim": old_dim,
+                "new_dim": new_dim,
+                "axis": axis,
+            }
+        )
 
         return module
 
@@ -159,9 +161,10 @@ class ExpansionEngine:
                     new_weight[i, :] = old_weight[-1, :]
             elif initialization == "noise":
                 new_weight[:old_dim, :] = old_weight
-                new_weight[old_dim:, :] = torch.randn(
-                    new_dim - old_dim, old_weight.shape[1], device=old_weight.device
-                ) * 0.01
+                new_weight[old_dim:, :] = (
+                    torch.randn(new_dim - old_dim, old_weight.shape[1], device=old_weight.device)
+                    * 0.01
+                )
 
             linear.weight = nn.Parameter(new_weight)
 
@@ -183,9 +186,10 @@ class ExpansionEngine:
                 new_weight[:, old_dim:] = old_weight[:, -1:].expand(-1, new_dim - old_dim)
             elif initialization == "noise":
                 new_weight[:, :old_dim] = old_weight
-                new_weight[:, old_dim:] = torch.randn(
-                    old_weight.shape[0], new_dim - old_dim, device=old_weight.device
-                ) * 0.01
+                new_weight[:, old_dim:] = (
+                    torch.randn(old_weight.shape[0], new_dim - old_dim, device=old_weight.device)
+                    * 0.01
+                )
 
             linear.weight = nn.Parameter(new_weight)
             linear.in_features = new_dim
@@ -210,9 +214,9 @@ class ExpansionEngine:
                 new_weight[i, :] = old_weight[-1, :]
         elif initialization == "noise":
             new_weight[:old_dim, :] = old_weight
-            new_weight[old_dim:, :] = torch.randn(
-                new_dim - old_dim, old_weight.shape[1], device=old_weight.device
-            ) * 0.01
+            new_weight[old_dim:, :] = (
+                torch.randn(new_dim - old_dim, old_weight.shape[1], device=old_weight.device) * 0.01
+            )
 
         embedding.weight = nn.Parameter(new_weight)
         embedding.num_embeddings = new_dim
