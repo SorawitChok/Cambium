@@ -4,7 +4,7 @@ StagedTrainer - Orchestrates multi-phase training with progressive unfreezing.
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Union
 
 import torch
 from torch import nn
@@ -31,16 +31,16 @@ class TrainingPhase:
     epochs: int = 1
     """Number of epochs for this phase."""
 
-    freeze: Optional[str] = None
+    freeze: str | None = None
     """What to freeze: 'original', 'all', 'none', or None (no change)."""
 
-    unfreeze_groups: Optional[list[int]] = None
+    unfreeze_groups: list[int] | None = None
     """Layer group indices to unfreeze (for progressive unfreezing)."""
 
     lr: float = 1e-4
     """Learning rate for this phase."""
 
-    discriminative_lr: Optional[dict[str, float]] = field(default_factory=dict)
+    discriminative_lr: dict[str, float] | None = field(default_factory=dict)
     """
     Discriminative LR config mapping patterns to learning rates.
     Example: {"embeddings": 1e-7, "original_layers": 1e-6, "new_layers": 1e-4}
@@ -113,9 +113,9 @@ class StagedTrainer:
     def __init__(
         self,
         model: Union[nn.Module, Any],
-        freezing_manager: Optional[FreezingManager] = None,
+        freezing_manager: FreezingManager | None = None,
         optimizer_class: type = torch.optim.AdamW,
-        device: Optional[torch.device] = None,
+        device: torch.device | None = None,
     ):
         """
         Initialize the staged trainer.
@@ -158,9 +158,9 @@ class StagedTrainer:
     def train(
         self,
         train_dataloader: DataLoader,
-        eval_dataloader: Optional[DataLoader] = None,
-        optimizer: Optional[Optimizer] = None,
-        scheduler: Optional[Any] = None,
+        eval_dataloader: DataLoader | None = None,
+        optimizer: Optimizer | None = None,
+        scheduler: Any | None = None,
     ) -> dict[str, Any]:
         """
         Run all training phases.
@@ -253,9 +253,9 @@ class StagedTrainer:
         self,
         phase: TrainingPhase,
         train_dataloader: DataLoader,
-        eval_dataloader: Optional[DataLoader],
+        eval_dataloader: DataLoader | None,
         optimizer: Optimizer,
-        scheduler: Optional[Any],
+        scheduler: Any | None,
     ) -> dict[str, Any]:
         """Train a single phase."""
         self.model.to(self.device)
@@ -363,7 +363,7 @@ class StagedTrainer:
         self.model.train()
         return total_loss / num_batches if num_batches > 0 else float("inf")
 
-    def save_checkpoint(self, path: str, metadata: Optional[dict] = None) -> None:
+    def save_checkpoint(self, path: str, metadata: dict | None = None) -> None:
         """Save training checkpoint."""
         checkpoint = {
             "model_state_dict": self.model.state_dict(),

@@ -102,7 +102,7 @@ class FreezingManager:
         logger.debug(f"Unfroze {len(unfrozen)} parameters matching pattern '{pattern}'")
         return unfrozen
 
-    def freeze_original_layers(self, new_layer_prefix: str = "new_") -> None:
+    def freeze_original_layers(self) -> None:
         """
         Freeze all original pretrained weights, leaving only new layers trainable.
 
@@ -226,14 +226,37 @@ class FreezingManager:
 
     def get_parameter_groups_for_discriminative_lr(
         self,
-        lr_config: dict[str, float],
+        lr_config: dict[str | tuple[int, int], float],
     ) -> list[dict[str, Any]]:
         """
         Create parameter groups with different learning rates.
 
+        Supports three key types for maximum flexibility:
+
+        1. **Layer index tuples** ``(start_idx, end_idx)`` — most intuitive::
+
+            lr_config = {
+                (0, 19): 1e-6,          # Layers 0-19
+                (20, 31): 5e-6,         # Layers 20-31
+            }
+
+        2. **Semantic names** — special strings with built-in meaning::
+
+            lr_config = {
+                "embeddings": 1e-8,       # embed_tokens + lm_head
+                "new_layers": 1e-4,     # Layers marked _cambium_new
+                "original_layers": 1e-6, # All original transformer layers
+            }
+
+        3. **Regex patterns** — full control via regex::
+
+            lr_config = {
+                r"embed_tokens|lm_head": 1e-8,
+                r"model\.layers\.\d+": 1e-6,
+            }
+
         Args:
-            lr_config: Dict mapping patterns to learning rates.
-                      Example: {"embeddings": 1e-7, "original": 1e-6, "new": 1e-4}
+            lr_config: Dict mapping patterns/tuples/names to learning rates.
 
         Returns:
             List of parameter group dicts for optimizer
@@ -241,17 +264,73 @@ class FreezingManager:
         groups = []
         assigned_params = set()
 
-        for pattern, lr in lr_config.items():
+        for key, lr in lr_config.items():
             params = []
-            regex = re.compile(pattern)
+            group_name = str(key)
 
-            for name, param in self.model.named_parameters():
-                if param.requires_grad and regex.search(name) and name not in assigned_params:
-                    params.append(param)
-                    assigned_params.add(name)
+            if isinstance(key, tuple) and len(key) == 2:
+                # Layer index range: (start_idx, end_idx)
+                start_idx, end_idx = key
+                layer_pattern = re.compile(r".*model\.layers\.(\d+)\.")
+
+                for name, param in self.model.named_parameters():
+                    if param.requires_grad and name not in assigned_params:
+                        match = layer_pattern.search(name)
+                        if match:
+                            layer_idx = int(match.group(1))
+                            if start_idx <= layer_idx <= end_idx:
+                                params.append(param)
+                                assigned_params.add(name)
+
+            elif isinstance(key, str):
+                if key == "embeddings":
+                    # Match embed_tokens and lm_head
+                    regex = re.compile(r".*(embed_tokens|lm_head).*")
+                elif key == "new_layers":
+                    # Match parameters belonging to modules marked as new
+                    for module_name, module in self.model.named_modules():
+                        if getattr(module, "_cambium_new", False):
+                            for param in module.parameters(recurse=True):
+                                # Find the full parameter name
+                                for full_name, model_param in self.model.named_parameters():
+                                    if model_param is param and full_name not in assigned_params:
+                                        params.append(param)
+                                        assigned_params.add(full_name)
+                                        break
+                    continue  # Already built params list
+                elif key == "original_layers":
+                    # Match all transformer layers (model.layers.N) that are NOT new
+                    for name, param in self.model.named_parameters():
+                        if param.requires_grad and name not in assigned_params:
+                            layer_match = re.search(r".*model\.layers\.(\d+)\.", name)
+                            if layer_match:
+                                layer_idx = int(layer_match.group(1))
+                                # Check if this layer is original (not marked _cambium_new)
+                                is_new = False
+                                for mod_name, mod in self.model.named_modules():
+                                    mod_layer_match = re.search(r"layers\.(\d+)", mod_name)
+                                    if (
+                                        mod_layer_match
+                                        and int(mod_layer_match.group(1)) == layer_idx
+                                    ):
+                                        if getattr(mod, "_cambium_new", False):
+                                            is_new = True
+                                            break
+                                if not is_new:
+                                    params.append(param)
+                                    assigned_params.add(name)
+                    continue  # Already built params list
+                else:
+                    # Treat as regex pattern (legacy behavior)
+                    regex = re.compile(key)
+
+                for name, param in self.model.named_parameters():
+                    if param.requires_grad and regex.search(name) and name not in assigned_params:
+                        params.append(param)
+                        assigned_params.add(name)
 
             if params:
-                groups.append({"params": params, "lr": lr, "name": pattern})
+                groups.append({"params": params, "lr": lr, "name": group_name})
 
         # Add remaining parameters with default LR
         remaining = []

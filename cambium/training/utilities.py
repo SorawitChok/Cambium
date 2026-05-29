@@ -28,7 +28,7 @@ class TrainingUtilities:
     @staticmethod
     def get_optimizer_with_discriminative_lr(
         model: nn.Module,
-        lr_config: dict[str, float],
+        lr_config: dict[str | tuple[int, int], float],
         optimizer_class: type = torch.optim.AdamW,
         weight_decay: float = 0.01,
     ) -> Optimizer:
@@ -44,13 +44,14 @@ class TrainingUtilities:
 
         Args:
             model: The model to optimize
-            lr_config: Dict mapping regex patterns to learning rates.
+            lr_config: Dict mapping patterns to learning rates.
+                Supports regex strings, semantic names, and layer index tuples.
                 Example value::
 
                     {
-                        "embed_tokens|lm_head": 1e-7,
-                        "model\\.layers\\.\\d+": 1e-6,
-                        "new_|expanded_": 1e-4,
+                        "embeddings": 1e-7,
+                        (0, 19): 1e-6,
+                        "new_layers": 1e-4,
                     }
             optimizer_class: Optimizer class to use
             weight_decay: Weight decay coefficient
@@ -61,26 +62,73 @@ class TrainingUtilities:
         import re
 
         param_groups: list[dict[str, Any]] = []
-        assigned_params: set = set()
+        assigned_ids: set = set()
 
-        # Sort patterns by specificity (more specific first)
-        sorted_patterns = sorted(
-            lr_config.items(),
-            key=lambda x: len(x[0]),
-            reverse=True,
-        )
-
-        for pattern, lr in sorted_patterns:
+        for key, lr in lr_config.items():
             params = []
-            regex = re.compile(pattern)
+            group_name = str(key)
 
-            for name, param in model.named_parameters():
-                if not param.requires_grad:
+            if isinstance(key, tuple) and len(key) == 2:
+                # Layer index range: (start_idx, end_idx)
+                start_idx, end_idx = key
+                layer_pattern = re.compile(r".*model\.layers\.(\d+)\.")
+
+                for name, param in model.named_parameters():
+                    if param.requires_grad and id(param) not in assigned_ids:
+                        match = layer_pattern.search(name)
+                        if match:
+                            layer_idx = int(match.group(1))
+                            if start_idx <= layer_idx <= end_idx:
+                                params.append(param)
+                                assigned_ids.add(id(param))
+
+            elif isinstance(key, str):
+                if key == "embeddings":
+                    regex = re.compile(r".*(embed_tokens|lm_head).*")
+                elif key == "new_layers":
+                    for module in model.modules():
+                        if getattr(module, "_cambium_new", False):
+                            for param in module.parameters(recurse=True):
+                                if param.requires_grad and id(param) not in assigned_ids:
+                                    params.append(param)
+                                    assigned_ids.add(id(param))
+                    if params:
+                        param_groups.append(
+                            {
+                                "params": params,
+                                "lr": lr,
+                                "weight_decay": weight_decay,
+                                "name": group_name,
+                            }
+                        )
                     continue
+                elif key == "original_layers":
+                    for name, param in model.named_parameters():
+                        if param.requires_grad and id(param) not in assigned_ids:
+                            layer_match = re.search(r".*model\.layers\.(\d+)\.", name)
+                            if layer_match:
+                                is_new = TrainingUtilities._is_new_param(model, param)
+                                if not is_new:
+                                    params.append(param)
+                                    assigned_ids.add(id(param))
+                    if params:
+                        param_groups.append(
+                            {
+                                "params": params,
+                                "lr": lr,
+                                "weight_decay": weight_decay,
+                                "name": group_name,
+                            }
+                        )
+                    continue
+                else:
+                    # Treat as regex pattern (legacy behavior)
+                    regex = re.compile(key)
 
-                if regex.search(name) and id(param) not in assigned_params:
-                    params.append(param)
-                    assigned_params.add(id(param))
+                for name, param in model.named_parameters():
+                    if param.requires_grad and regex.search(name) and id(param) not in assigned_ids:
+                        params.append(param)
+                        assigned_ids.add(id(param))
 
             if params:
                 param_groups.append(
@@ -88,17 +136,17 @@ class TrainingUtilities:
                         "params": params,
                         "lr": lr,
                         "weight_decay": weight_decay,
-                        "name": pattern,
+                        "name": group_name,
                     }
                 )
-                logger.debug(f"LR group '{pattern}': {len(params)} params, lr={lr}")
+                logger.debug(f"LR group '{group_name}': {len(params)} params, lr={lr}")
 
         # Add remaining parameters with default LR
         remaining = []
         for name, param in model.named_parameters():
-            if param.requires_grad and id(param) not in assigned_params:
+            if param.requires_grad and id(param) not in assigned_ids:
                 remaining.append(param)
-                assigned_params.add(id(param))
+                assigned_ids.add(id(param))
 
         if remaining:
             default_lr = 1e-4
@@ -293,6 +341,16 @@ class TrainingUtilities:
         return trainer
 
     @staticmethod
+    def _is_new_param(model: nn.Module, param: torch.nn.Parameter) -> bool:
+        """Check if a parameter belongs to a module marked as new via _cambium_new."""
+        for module in model.modules():
+            if getattr(module, "_cambium_new", False):
+                for module_param in module.parameters(recurse=True):
+                    if module_param is param:
+                        return True
+        return False
+
+    @staticmethod
     def create_optimizer_groups_for_staged_training(
         model: nn.Module,
         phase: int = 1,
@@ -304,6 +362,9 @@ class TrainingUtilities:
         Phase 1: Only new layers (high LR)
         Phase 2: Last N layers + new layers (medium LR)
         Phase 3: All layers (low LR with discriminative)
+
+        New layers are identified by the ``_cambium_new`` attribute set during
+        expansion, not by name patterns.
 
         Args:
             model: The expanded model
@@ -319,10 +380,11 @@ class TrainingUtilities:
 
         if phase == 1:
             # Phase 1: Only new layers
-            new_params = []
-            for name, param in model.named_parameters():
-                if param.requires_grad and re.search(r"new_|expanded_", name):
-                    new_params.append(param)
+            new_params = [
+                param
+                for name, param in model.named_parameters()
+                if param.requires_grad and TrainingUtilities._is_new_param(model, param)
+            ]
 
             groups.append(
                 {
@@ -341,7 +403,7 @@ class TrainingUtilities:
                 if not param.requires_grad:
                     continue
 
-                if re.search(r"new_|expanded_", name):
+                if TrainingUtilities._is_new_param(model, param):
                     new_params.append(param)
                 elif re.search(r"model\.layers\.(1[8-9]|2[0-9])", name):
                     # Assuming 24 layers, last 6
@@ -365,9 +427,9 @@ class TrainingUtilities:
         else:
             # Phase 3: All layers with discriminative LR
             lr_config = {
-                r"embed|lm_head": base_lr * 0.1,
-                r"model\\.layers": base_lr * 0.5,
-                r"new_|expanded_": base_lr,
+                "embeddings": base_lr * 0.1,
+                (0, 23): base_lr * 0.5,
+                "new_layers": base_lr,
             }
             return TrainingUtilities.get_optimizer_with_discriminative_lr(model, lr_config)
 

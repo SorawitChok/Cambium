@@ -84,16 +84,26 @@ trainer.add_phase(
     name="discriminative_training",
     freeze="none",
     discriminative_lr={
-        "embed_tokens|lm_head": 1e-8,      # Embeddings and head: very low
-        "model\.layers": 1e-6,              # Original layers: low
-        "model\.layers\.(2[0-9])": 5e-6,    # Last 10 layers: medium
-        "new_|expanded_": 1e-4,             # New layers: high
+        "embeddings": 1e-8,       # Semantic name: embed_tokens + lm_head
+        (0, 19): 1e-6,             # Layers 0-19: low
+        (20, 29): 5e-6,            # Layers 20-29: medium
+        "new_layers": 1e-4,        # Semantic name: new expanded layers
     },
     epochs=2,
 )
 
 history = trainer.train(train_dataloader, eval_dataloader)
 ```
+
+**Supported key types for `discriminative_lr`:**
+
+| Key Type | Example | Description |
+|----------|---------|-------------|
+| Layer tuple | `(0, 19): 1e-6` | Apply LR to layers 0-19 (inclusive). Matches `model.layers.N.*` |
+| Semantic name | `"embeddings": 1e-8` | Built-in alias for `embed_tokens` and `lm_head` |
+| Semantic name | `"new_layers": 1e-4` | Matches layers marked as new during expansion |
+| Semantic name | `"original_layers": 1e-6` | Matches all original (non-new) transformer layers |
+| Regex string | `r"model\.layers\.\d+": 1e-6` | Full regex control (fallback) |
 
 ## Manual Freezing Control
 
