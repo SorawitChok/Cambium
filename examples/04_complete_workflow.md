@@ -2,16 +2,18 @@
 
 This example shows a complete end-to-end workflow: loading a model, expanding it, training in stages, and saving the result.
 
-## Full Example: Expanding and Fine-tuning Gemma-2B
+## Full Example: Expanding and Fine-tuning
 
 ```python
 import torch
 from torch.utils.data import DataLoader
-from transformers import AutoTokenizer, TrainingArguments
+from transformers import AutoTokenizer
+
+# Requires: pip install datasets
 from datasets import load_dataset
 
 from cambium import ExpandableModel, InterleavedExpansion
-from cambium.training import StagedTrainer, TrainingPhase
+from cambium.training import StagedTrainer
 from cambium.training import TrainingUtilities
 from cambium.utils import estimate_memory_usage
 
@@ -20,15 +22,16 @@ from cambium.utils import estimate_memory_usage
 # ============================================
 print("Step 1: Loading base model...")
 model = ExpandableModel.from_pretrained(
-    "google/gemma-2b",
-    torch_dtype=torch.float16,
-    device_map="auto",
+    "HuggingFaceTB/SmolLM2-135M",
+    dtype=torch.float32,
 )
-tokenizer = AutoTokenizer.from_pretrained("google/gemma-2b")
-tokenizer.pad_token = tokenizer.eos_token
+tokenizer = AutoTokenizer.from_pretrained("HuggingFaceTB/SmolLM2-135M")
+if tokenizer.pad_token is None:
+    tokenizer.pad_token = tokenizer.eos_token
 
 # Check original model info
-print(f"Original layers: {len(model.get_model().model.layers)}")
+n_layers = len(model.get_model().model.layers)
+print(f"Original layers: {n_layers}")
 
 # ============================================
 # Step 2: Estimate Memory
@@ -49,7 +52,7 @@ print(f"Recommended: {estimate['recommended_gb']:.2f} GB")
 # ============================================
 print("\nStep 3: Expanding model...")
 expander = InterleavedExpansion(
-    num_layers=4,              # Add 4 new layers
+    num_layers=2,               # Add 2 new layers
     initialization="identity",  # Near-identity initialization
 )
 
@@ -102,21 +105,6 @@ TrainingUtilities.enable_memory_optimizations(
 # ============================================
 print("\nStep 6: Setting up staged training...")
 
-# Create custom optimizer function for discriminative LR
-def create_phase_optimizer(model, phase_config):
-    lr_config = {}
-    if phase_config["freeze_original"]:
-        lr_config = {r"new_": phase_config["lr"]}
-    else:
-        lr_config = {
-            r"embed|lm_head": phase_config["lr"] * 0.1,
-            r"model\.layers": phase_config["lr"],
-            r"new_": phase_config["lr"] * 2,
-        }
-    return TrainingUtilities.get_optimizer_with_discriminative_lr(
-        model, lr_config
-    )
-
 # Setup trainer
 trainer = StagedTrainer(
     model,
@@ -135,23 +123,22 @@ trainer.add_phase(
     warmup_steps=100,
 )
 
-# Phase 2: Unfreeze last 6 layers
-# Now the new and last 6 original layers train together
+# Phase 2: Unfreeze last half of the model (groups 2 and 3 of 4)
 trainer.add_phase(
     name="phase2_unfreeze_tail",
     freeze=None,  # Don't change freeze state
-    unfreeze_groups=[-6, -5, -4, -3, -2, -1],  # Last 6 layer groups
+    unfreeze_groups=[-2, -1],
     lr=5e-5,
     epochs=1,
     batch_size=4,
     warmup_steps=50,
 )
 
-# Phase 3: Progressive unfreezing - unfreeze middle layers
- trainer.add_phase(
+# Phase 3: Progressive unfreezing - unfreeze first half (groups 0 and 1)
+trainer.add_phase(
     name="phase3_unfreeze_middle",
     freeze=None,
-    unfreeze_groups=[-12, -11, -10, -9, -8, -7],  # Middle 6
+    unfreeze_groups=[-4, -3],
     lr=2e-5,
     epochs=1,
     batch_size=4,
@@ -196,12 +183,12 @@ print(f"History: {history}")
 print("\nStep 8: Saving model...")
 
 # Save expanded model with metadata
-model.save_expanded("./gemma-2b-expanded-4L-finetuned")
+model.save_expanded("./smollm-expanded-2L-finetuned")
 
 # Also save a checkpoint
 trainer.save_checkpoint("./final-checkpoint.pt")
 
-print("Saved to: ./gemma-2b-expanded-4L-finetuned")
+print("Saved to: ./smollm-expanded-2L-finetuned")
 
 # ============================================
 # Step 9: Test Inference
@@ -234,13 +221,13 @@ from cambium import ExpandableModel
 from cambium.training import StagedTrainer
 
 # Load previously saved model
-model = ExpandableModel.load_expanded("./gemma-2b-expanded-4L-finetuned")
+model = ExpandableModel.load_expanded("./smollm-expanded-2L-finetuned")
 
 # Create trainer
 trainer = StagedTrainer(model)
 
 # Load checkpoint
-trainer.load_checkpoint("./checkpoint-step-5000.pt")
+trainer.load_checkpoint("./final-checkpoint.pt")
 print(f"Resuming from phase {trainer.current_phase_idx}, step {trainer.global_step}")
 
 # Add remaining phases and continue
@@ -250,13 +237,16 @@ print(f"Resuming from phase {trainer.current_phase_idx}, step {trainer.global_st
 ## Using with PEFT/LoRA on Top
 
 ```python
+import torch
 from cambium import ExpandableModel, InterleavedExpansion
 from cambium.training import TrainingUtilities
+
+# Requires: pip install peft
 from peft import LoraConfig, get_peft_model
 
 # Load and expand
-model = ExpandableModel.from_pretrained("google/gemma-2b")
-model.expand(InterleavedExpansion(num_layers=4))
+model = ExpandableModel.from_pretrained("HuggingFaceTB/SmolLM2-135M", dtype=torch.float32)
+model.expand(InterleavedExpansion(num_layers=2))
 
 # Add LoRA on top of expanded model
 lora_config = LoraConfig(
@@ -278,12 +268,13 @@ peft_model.print_trainable_parameters()
 ## Loading and Using in Production
 
 ```python
+import torch
 from cambium import ExpandableModel
 from transformers import AutoTokenizer, pipeline
 
 # Load expanded model
-model_wrapper = ExpandableModel.load_expanded("./gemma-2b-expanded-4L-finetuned")
-tokenizer = AutoTokenizer.from_pretrained("./gemma-2b-expanded-4L-finetuned")
+model_wrapper = ExpandableModel.load_expanded("./smollm-expanded-2L-finetuned")
+tokenizer = AutoTokenizer.from_pretrained("./smollm-expanded-2L-finetuned")
 
 # Use with transformers pipeline
 text_gen = pipeline(

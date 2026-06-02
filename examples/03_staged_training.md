@@ -26,19 +26,20 @@ Phase 3: Full Fine-tuning
 ## Basic Staged Training
 
 ```python
+import torch
 from cambium import ExpandableModel, InterleavedExpansion
 from cambium.training import StagedTrainer, TrainingPhase
 from torch.utils.data import DataLoader
 
 # Load and expand model
-model = ExpandableModel.from_pretrained("google/gemma-2b")
+model = ExpandableModel.from_pretrained("HuggingFaceTB/SmolLM2-135M", dtype=torch.float32)
 model.expand(InterleavedExpansion(num_layers=4))
 
 # Create trainer
 trainer = StagedTrainer(model)
 
 # Phase 1: Train only new layers
- trainer.add_phase(
+trainer.add_phase(
     name="warmup_new_layers",
     freeze="original",  # Freeze all original weights
     lr=1e-4,
@@ -46,17 +47,17 @@ trainer = StagedTrainer(model)
     batch_size=4,
 )
 
-# Phase 2: Unfreeze last 4 layers
- trainer.add_phase(
+# Phase 2: Unfreeze last 2 groups (progressive unfreezing)
+trainer.add_phase(
     name="unfreeze_tail",
     freeze=None,  # Keep current freeze state
-    unfreeze_groups=[-4, -3, -2, -1],  # Unfreeze last 4 groups
+    unfreeze_groups=[-2, -1],  # Unfreeze last 2 of 4 groups
     lr=5e-5,
     epochs=1,
 )
 
 # Phase 3: Full fine-tuning
- trainer.add_phase(
+trainer.add_phase(
     name="full_finetune",
     freeze="none",  # Unfreeze all
     lr=1e-6,
@@ -71,11 +72,12 @@ history = trainer.train(train_dataloader, eval_dataloader)
 ## Discriminative Learning Rates
 
 ```python
+import torch
 from cambium import ExpandableModel, InterleavedExpansion
 from cambium.training import StagedTrainer
 
-model = ExpandableModel.from_pretrained("google/gemma-2b")
-model.expand(InterleavedExpansion(num_layers=4))
+model = ExpandableModel.from_pretrained("HuggingFaceTB/SmolLM2-135M", dtype=torch.float32)
+model.expand(InterleavedExpansion(num_layers=2))
 
 trainer = StagedTrainer(model)
 
@@ -108,19 +110,20 @@ history = trainer.train(train_dataloader, eval_dataloader)
 ## Manual Freezing Control
 
 ```python
+import torch
 from cambium import ExpandableModel, InterleavedExpansion
 
-model = ExpandableModel.from_pretrained("google/gemma-2b")
-model.expand(InterleavedExpansion(num_layers=4))
+model = ExpandableModel.from_pretrained("HuggingFaceTB/SmolLM2-135M", dtype=torch.float32)
+model.expand(InterleavedExpansion(num_layers=2))
 
 # Get the freezing manager
 fm = model.freezing_manager
 
 # Freeze specific patterns
-fm.freeze_by_pattern(r"model\.layers\.[0-9]\\.")  # First 10 layers
+fm.freeze_by_pattern(r"model\.layers\.[0-9]\.")  # Layers 0-9
 
 # Unfreeze specific range
-fm.unfreeze_layer_range(20, 31)  # Last 12 layers
+fm.unfreeze_layer_range(20, 29)  # Last 10 layers
 
 # Unfreeze by groups
 fm.unfreeze_group(3, num_groups=4)  # Unfreeze last quarter
@@ -135,13 +138,14 @@ fm.print_trainable_status()
 ## Integration with Hugging Face Trainer
 
 ```python
+import torch
 from cambium import ExpandableModel, InterleavedExpansion
 from transformers import TrainingArguments, Trainer
 from cambium.training import TrainingUtilities
 
 # Load and expand model
-model = ExpandableModel.from_pretrained("google/gemma-2b")
-model.expand(InterleavedExpansion(num_layers=4))
+model = ExpandableModel.from_pretrained("HuggingFaceTB/SmolLM2-135M", dtype=torch.float32)
+model.expand(InterleavedExpansion(num_layers=2))
 
 # Phase 1: Freeze original
 model.freeze_original()
@@ -186,13 +190,16 @@ model.unfreeze_all()
 ## Integration with TRL (SFT)
 
 ```python
+import torch
 from cambium import ExpandableModel, InterleavedExpansion
 from trl import SFTTrainer, SFTConfig
 from transformers import AutoTokenizer
 
-model = ExpandableModel.from_pretrained("google/gemma-2b")
-model.expand(InterleavedExpansion(num_layers=4))
-tokenizer = AutoTokenizer.from_pretrained("google/gemma-2b")
+model = ExpandableModel.from_pretrained("HuggingFaceTB/SmolLM2-135M", dtype=torch.float32)
+model.expand(InterleavedExpansion(num_layers=2))
+tokenizer = AutoTokenizer.from_pretrained("HuggingFaceTB/SmolLM2-135M")
+if tokenizer.pad_token is None:
+    tokenizer.pad_token = tokenizer.eos_token
 
 # Freeze for Phase 1
 model.freeze_original()
@@ -219,11 +226,12 @@ trainer.train()
 ## Memory Optimization
 
 ```python
+import torch
 from cambium import ExpandableModel, InterleavedExpansion
 from cambium.training import TrainingUtilities
 
-model = ExpandableModel.from_pretrained("google/gemma-2b")
-model.expand(InterleavedExpansion(num_layers=4))
+model = ExpandableModel.from_pretrained("HuggingFaceTB/SmolLM2-135M", dtype=torch.float32)
+model.expand(InterleavedExpansion(num_layers=2))
 
 # Enable memory optimizations
 TrainingUtilities.enable_memory_optimizations(
@@ -240,7 +248,12 @@ TrainingUtilities.enable_memory_optimizations(
 ## Checkpointing and Resuming
 
 ```python
+import torch
+from cambium import ExpandableModel, InterleavedExpansion
 from cambium.training import StagedTrainer
+
+model = ExpandableModel.from_pretrained("HuggingFaceTB/SmolLM2-135M", dtype=torch.float32)
+model.expand(InterleavedExpansion(num_layers=2))
 
 trainer = StagedTrainer(model)
 
@@ -265,12 +278,15 @@ history = trainer.train(train_dataloader)
 ## Monitoring Catastrophic Forgetting
 
 ```python
+import torch
 from cambium import ExpandableModel, InterleavedExpansion
-from cambium.utils import CatastrophicForgettingDetector
+from cambium.utils.validation import CatastrophicForgettingDetector
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 # Load original model for comparison
-original_model = AutoModelForCausalLM.from_pretrained("google/gemma-2b")
+original_model = AutoModelForCausalLM.from_pretrained(
+    "HuggingFaceTB/SmolLM2-135M", dtype=torch.float32
+)
 
 # Create detector
 detector = CatastrophicForgettingDetector(
@@ -279,11 +295,11 @@ detector = CatastrophicForgettingDetector(
 )
 
 # Load and expand model
-model = ExpandableModel.from_pretrained("google/gemma-2b")
-model.expand(InterleavedExpansion(num_layers=4))
+model = ExpandableModel.from_pretrained("HuggingFaceTB/SmolLM2-135M", dtype=torch.float32)
+model.expand(InterleavedExpansion(num_layers=2))
 
 # Check divergence during training
-tokenizer = AutoTokenizer.from_pretrained("google/gemma-2b")
+tokenizer = AutoTokenizer.from_pretrained("HuggingFaceTB/SmolLM2-135M")
 text = "The capital of France is Paris"
 inputs = tokenizer(text, return_tensors="pt")
 
