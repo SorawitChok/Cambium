@@ -220,6 +220,11 @@ class ExpandableModel:
         """
         Load a previously expanded model.
 
+        Re-applies any expansions that were active at save time, so that
+        structural side-effects (e.g. ``cambium_adapters`` attributes on
+        transformer layers, patched forward closures) are restored before
+        the weights are returned to the caller.
+
         Args:
             load_directory: Directory to load from
             **kwargs: Additional arguments for model loading
@@ -232,7 +237,7 @@ class ExpandableModel:
         with open(metadata_path, "r") as f:
             metadata = json.load(f)
 
-        # Load base model and apply expansions
+        # Load base model
         from transformers import AutoModelForCausalLM
 
         model = AutoModelForCausalLM.from_pretrained(
@@ -241,10 +246,94 @@ class ExpandableModel:
         )
 
         expandable = cls(model, model_name=metadata.get("original_model"))
-        expandable.expansions = metadata.get("expansions", [])
-        expandable.is_expanded = metadata.get("is_expanded", False)
+        stored_expansions = metadata.get("expansions", [])
+
+        # Re-apply any expansions whose dataclass config can be
+        # reconstructed from primitives alone. This is required for
+        # strategies like ParallelAdapterExpansion that attach side-modules
+        # as plain attributes (not registered submodules) and patch
+        # forward closures, neither of which survive a save/load cycle.
+        from cambium.strategies import STRATEGY_REGISTRY
+
+        for record in stored_expansions:
+            strategy_name = record.get("strategy")
+            config = record.get("config", {})
+            strategy_cls = STRATEGY_REGISTRY.get(strategy_name)
+            if strategy_cls is None:
+                # Not in registry (e.g. CustomBlockExpansion carries a
+                # block_class callable that can't round-trip through JSON).
+                # Leave a placeholder so callers can detect this state.
+                expandable.expansions.append(record)
+                continue
+            try:
+                expander = strategy_cls(**config)
+            except TypeError as e:
+                # Stored config no longer matches the dataclass signature
+                # (e.g. field renamed/removed between save and load). Skip
+                # rather than crashing the load entirely.
+                logger.warning(
+                    f"Could not reconstruct {strategy_name} from saved "
+                    f"config: {e}. Skipping re-application."
+                )
+                expandable.expansions.append(record)
+                continue
+            expandable.expand(expander)
+
+        if stored_expansions and not expandable.is_expanded:
+            expandable.is_expanded = True
+
+        # Some strategies (e.g. ParallelAdapterExpansion) attach
+        # parameters as plain attributes on submodules. Those tensors
+        # are saved by save_pretrained, but the base HF model class has
+        # no declared mapping for them, so they are loaded as
+        # "UNEXPECTED" and dropped. We pull the safetensors file
+        # ourselves and copy any keys that now match a live parameter
+        # (the re-applied expansion makes the parameter paths valid).
+        expandable._reload_orphan_weights(load_directory)
 
         return expandable
+
+    def _reload_orphan_weights(self, load_directory: str) -> None:
+        """
+        Copy weights from ``model.safetensors`` into the live model
+        parameters, for any key the base HF loader would have dropped.
+
+        This is specifically needed when an expansion re-attaches
+        side-modules (like ``cambium_adapters``) to layers after
+        ``from_pretrained`` has finished. The re-attached parameters
+        did not exist when HF built the base model, so their tensors
+        were not loaded; this method picks them up from disk.
+        """
+        from pathlib import Path
+
+        weights_file = Path(load_directory) / "model.safetensors"
+        if not weights_file.exists():
+            # Non-safetensors checkpoints (e.g. PyTorch bin) are not
+            # re-loaded here; the caller would need to handle those.
+            return
+
+        try:
+            from safetensors.torch import load_file
+        except ImportError:
+            logger.debug("safetensors not available; skipping orphan weight reload")
+            return
+
+        saved = load_file(str(weights_file))
+        live = dict(self.model.named_parameters())
+
+        loaded, missing = 0, 0
+        for key, tensor in saved.items():
+            if key in live and live[key].shape == tensor.shape:
+                live[key].data.copy_(tensor.to(live[key].dtype))
+                loaded += 1
+            elif key in live:
+                logger.warning(
+                    f"Shape mismatch for '{key}': saved {tuple(tensor.shape)} "
+                    f"vs model {tuple(live[key].shape)}; skipping"
+                )
+                missing += 1
+        if loaded:
+            logger.info(f"Reloaded {loaded} expansion-specific weight tensor(s)")
 
     def validate(self) -> dict[str, Any]:
         """

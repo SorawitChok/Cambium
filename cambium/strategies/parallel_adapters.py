@@ -134,6 +134,16 @@ class ParallelAttentionAdapter(nn.Module):
 
         # Attention
         attn_weights = torch.matmul(q, k.transpose(-2, -1)) / (self.head_dim**0.5)
+
+        # Causal mask: prevent positions from attending to future tokens
+        # (required because this adapter runs inside a decoder block)
+        seq_len = attn_weights.size(-1)
+        causal_mask = torch.full(
+            (seq_len, seq_len), float("-inf"), device=attn_weights.device, dtype=attn_weights.dtype
+        )
+        causal_mask = torch.triu(causal_mask, diagonal=1)
+        attn_weights = attn_weights + causal_mask
+
         attn_weights = F.softmax(attn_weights, dim=-1)
         attn_output = torch.matmul(attn_weights, v)
 
