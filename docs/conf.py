@@ -3,14 +3,24 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
 import os
+import shutil
 import sys
 
 # Add the project root to the path so Sphinx can import cambium
 sys.path.insert(0, os.path.abspath(".."))
 
+# Copy example markdown files into the docs source tree so Sphinx can include them.
+_examples_src = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "examples"))
+_examples_dst = os.path.abspath(os.path.join(os.path.dirname(__file__), "examples"))
+if os.path.exists(_examples_src):
+    if os.path.exists(_examples_dst):
+        shutil.rmtree(_examples_dst)
+    shutil.copytree(_examples_src, _examples_dst)
+
+
 # -- Project information -----------------------------------------------------
 project = "Cambium"
-copyright = "2024, Cambium Contributors"
+copyright = "2024–2026, Cambium Contributors"
 author = "Cambium Contributors"
 release = "0.1.0"
 version = "0.1.0"
@@ -22,6 +32,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
     "sphinx.ext.autosummary",
+    "myst_parser",
 ]
 
 autodoc_default_options = {
@@ -48,6 +59,18 @@ html_short_title = "Cambium"
 napoleon_google_docstring = True
 napoleon_numpy_docstring = True
 napoleon_include_init_with_doc = True
+
+# MyST-Parser settings for Markdown example files
+myst_enable_extensions = ["colon_fence"]
+
+# HTML theme options
+html_theme_options = {
+    "collapse_navigation": False,
+    "sticky_navigation": True,
+    "navigation_depth": 4,
+    "includehidden": True,
+    "titles_only": False,
+}
 
 # Suppress duplicate object warnings when autosummary and automodule overlap
 suppress_warnings = ["autodoc.duplicate_object"]
