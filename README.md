@@ -249,7 +249,7 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 
 ```bash
 # Clone the repository
-git clone https://github.com/cambium-lib/cambium.git
+git clone https://github.com/SorawitChok/Cambium.git
 cd cambium
 
 # Install in development mode
@@ -284,7 +284,7 @@ If you use Cambium in your research, please cite:
   title={Cambium: Advanced LLM Architecture Augmentation},
   author={Sorawit Chokphantavee, Sirawit Chokphantavee, and Cambium Team},
   year={2024},
-  url={https://github.com/cambium-lib/cambium}
+  url={https://github.com/SorawitChok/Cambium}
 }
 ```
 

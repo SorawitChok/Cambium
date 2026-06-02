@@ -70,7 +70,7 @@ Editable Installation (for Contributors)
 
 Clone the repository and install in editable mode::
 
-   git clone https://github.com/cambium-lib/cambium.git
+   git clone https://github.com/SorawitChok/Cambium.git
    cd cambium
    pip install -e ".[dev]"
 

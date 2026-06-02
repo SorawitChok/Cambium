@@ -58,10 +58,10 @@ all = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/cambium-lib/cambium"
-Repository = "https://github.com/cambium-lib/cambium"
+Homepage = "https://github.com/SorawitChok/Cambium"
+Repository = "https://github.com/SorawitChok/Cambium"
 Documentation = "https://cambium-lib.readthedocs.io"
-"Bug Tracker" = "https://github.com/cambium-lib/cambium/issues"
+"Bug Tracker" = "https://github.com/SorawitChok/Cambium/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -84,6 +84,17 @@ ignore_missing_imports = true
 warn_redundant_casts = true
 warn_unused_ignores = true
 show_error_codes = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests/unit"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+markers = [
+    "slow: marks tests as slow (integration tests)",
+    "integration: marks tests as integration tests",
+]
 
 [tool.bumpver]
 current_version = "0.1.0"
