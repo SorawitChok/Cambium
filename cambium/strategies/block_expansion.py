@@ -170,9 +170,7 @@ class InterleavedExpansion:
 
         return create_block
 
-    def _apply_initialization(
-        self, model: nn.Module, blocks: list[nn.Module]
-    ) -> None:
+    def _apply_initialization(self, model: nn.Module, blocks: list[nn.Module]) -> None:
         """Apply initialization strategy to the newly inserted blocks.
 
         Args:

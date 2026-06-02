@@ -390,9 +390,7 @@ class CustomBlockExpansion:
 
         logger.info(f"All {len(blocks)} blocks passed validation")
 
-    def _apply_initialization(
-        self, model: nn.Module, blocks: list[nn.Module]
-    ) -> None:
+    def _apply_initialization(self, model: nn.Module, blocks: list[nn.Module]) -> None:
         """Apply initialization strategy to the newly inserted blocks.
 
         Args:
