@@ -33,12 +33,12 @@ test-cov:
 
 lint:
 	black --check cambium/ tests/
-	isort --check-only cambium/ tests/
+	isort --check-only --profile black cambium/ tests/
 	mypy cambium/
 
 format:
 	black cambium/ tests/
-	isort cambium/ tests/
+	isort --profile black cambium/ tests/
 
 clean:
 	rm -rf build/
