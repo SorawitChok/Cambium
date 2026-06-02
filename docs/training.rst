@@ -203,18 +203,20 @@ Monitor whether the expanded model is diverging from the original::
 
    from cambium.utils.validation import CatastrophicForgettingDetector
 
-   detector = CatastrophicForgettingDetector(base_model=model.get_model())
+   detector = CatastrophicForgettingDetector(base_model=original_model, threshold=5.0)
 
    # During or after training
-   detector.evaluate(expanded_model, eval_dataloader)
-   if detector.is_forgetting():
+   is_ok, kl_div = detector.check(expanded_model, test_inputs)
+   if not is_ok:
        print("Warning: catastrophic forgetting detected")
+
+   report = detector.get_report()
 
 You can also use the convenience function::
 
    from cambium.utils import check_for_catastrophic_forgetting
 
-   check_for_catastrophic_forgetting(original_model, expanded_model, eval_dataset)
+   check_for_catastrophic_forgetting(original_model, expanded_model, eval_dataset, tokenizer)
 
 Recommended Hyperparameters
 ---------------------------

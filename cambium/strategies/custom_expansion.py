@@ -43,7 +43,8 @@ class CustomBlockExpansion:
         from cambium import ExpandableModel, CustomBlockExpansion
         from cambium.blocks import SwiGLUBlock
 
-        model = ExpandableModel.from_pretrained("google/gemma-2b")
+        import torch
+        model = ExpandableModel.from_pretrained("HuggingFaceTB/SmolLM2-135M", dtype=torch.float32)
         model.expand(CustomBlockExpansion(
             block_class=SwiGLUBlock,
             num_layers=4,

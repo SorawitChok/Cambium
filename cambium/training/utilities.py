@@ -378,6 +378,13 @@ class TrainingUtilities:
 
         groups = []
 
+        # Infer total layer count dynamically from parameter names.
+        total_layers = 0
+        for n, p in model.named_parameters():
+            m = re.search(r"model\.layers\.(\d+)\.", n)
+            if m:
+                total_layers = max(total_layers, int(m.group(1)) + 1)
+
         if phase == 1:
             # Phase 1: Only new layers
             new_params = [
@@ -395,9 +402,10 @@ class TrainingUtilities:
             )
 
         elif phase == 2:
-            # Phase 2: New layers + last quarter of original
+            # Phase 2: New layers + last quarter
             new_params = []
             tail_params = []
+            last_quarter_start = total_layers - total_layers // 4
 
             for name, param in model.named_parameters():
                 if not param.requires_grad:
@@ -405,9 +413,10 @@ class TrainingUtilities:
 
                 if TrainingUtilities._is_new_param(model, param):
                     new_params.append(param)
-                elif re.search(r"model\.layers\.(1[8-9]|2[0-9])", name):
-                    # Assuming 24 layers, last 6
-                    tail_params.append(param)
+                else:
+                    m = re.search(r"model\.layers\.(\d+)\.", name)
+                    if m and int(m.group(1)) >= last_quarter_start:
+                        tail_params.append(param)
 
             groups.append(
                 {
@@ -428,8 +437,8 @@ class TrainingUtilities:
             # Phase 3: All layers with discriminative LR
             lr_config = {
                 "embeddings": base_lr * 0.1,
-                (0, 23): base_lr * 0.5,
                 "new_layers": base_lr,
+                (0, total_layers - 1): base_lr * 0.5,
             }
             return TrainingUtilities.get_optimizer_with_discriminative_lr(model, lr_config)
 

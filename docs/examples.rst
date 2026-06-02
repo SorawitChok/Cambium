@@ -17,7 +17,7 @@ The following example guides walk through real use cases with runnable code. Eac
 Notes
 -----
 
-- All examples assume ``pip install cambium`` and ``pip install transformers`` are already installed.
+- All examples assume ``pip install cambium-llm`` and ``pip install transformers`` are already installed.
 - Some examples reference optional integrations (``trl``, ``peft``, ``datasets``). Install them with::
 
      pip install trl peft datasets

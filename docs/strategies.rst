@@ -65,7 +65,7 @@ You can target only specific layers or only the MLP::
    model.expand(WidthExpansion(
        hidden_dim_multiplier=1.25,
        initialization="zero",
-       target_layers=list(range(4, 8)),  # Only layers 4-7
+       layer_indices=list(range(4, 8)),  # Only layers 4-7
        expand_attention=False,             # MLP only
    ))
 

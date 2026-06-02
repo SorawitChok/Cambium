@@ -288,6 +288,9 @@ class ParallelAdapterExpansion:
         layer.forward = new_forward
 
 
+# Not exported in cambium.__init__ because the implementation is
+# incomplete (raises NotImplementedError). Will be added to the public
+# API once the full MoE routing and expert layers are implemented.
 @dataclass
 class MixtureOfExpertsExpansion:
     """

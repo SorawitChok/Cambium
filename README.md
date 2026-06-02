@@ -1,7 +1,7 @@
 # Cambium 🌱
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-orange.svg)](https://pytorch.org/)
 
 > **Advanced LLM Architecture Augmentation Library**
@@ -9,6 +9,14 @@
 > Expand your LLMs like nature intended - surgically, efficiently, and beautifully.
 
 Cambium is an open-source Python library that enables surgical expansion of Large Language Models (LLMs). Named after the plant tissue responsible for secondary growth, Cambium allows developers and researchers to add new layers or architecture blocks to existing models using familiar PyTorch-like APIs.
+
+## 🌱 Our Vision
+
+We believe that experimenting with LLM architecture should not require a multi-million-dollar compute cluster.
+
+Today, the frontier of language-model research is largely locked behind paywalls of scale—prohibitive GPU hours, massive infrastructure, and closed-source decisions made by a handful of organizations. Cambium exists to change that. We want anyone with curiosity and a laptop to be able to ask: *"What if I add a new attention mechanism here?"* or *"What happens if I widen the hidden dimensions of layer 12?"*—and actually try it, on real models, in minutes.
+
+By making surgical model expansion lightweight, reproducible, and accessible, we hope to empower students, indie researchers, and open-source teams to push the boundaries of LLM architecture without the traditional barriers of cost and scale. Every new idea deserves a fair shot, regardless of the size of your GPU budget.
 
 ## 🎯 The Core Idea
 
@@ -28,13 +36,13 @@ Cambium:     Expand 2B → 4B, preserve weights, train only new (efficient 🌱)
 
 ```bash
 # Basic installation
-pip install cambium
+pip install cambium-llm
 
 # With training dependencies (recommended)
-pip install "cambium[train]"
+pip install "cambium-llm[train]"
 
 # Development installation
-pip install "cambium[dev]"
+pip install "cambium-llm[dev]"
 ```
 
 ## 🚀 Quick Start
@@ -42,9 +50,10 @@ pip install "cambium[dev]"
 ```python
 from cambium import ExpandableModel, InterleavedExpansion
 from cambium.training import StagedTrainer
+import torch
 
 # 1. Load base model
-model = ExpandableModel.from_pretrained("google/gemma-2b")
+model = ExpandableModel.from_pretrained("HuggingFaceTB/SmolLM2-135M", dtype=torch.float32)
 
 # 2. Expand with 4 new transformer blocks
 model.expand(InterleavedExpansion(num_layers=4, initialization="identity"))
@@ -185,11 +194,15 @@ trainer.add_phase(
 | Model | Block Expansion | Width Expansion | Adapters |
 |-------|-----------------|-----------------|----------|
 | LLaMA 2/3 | ✅ | ✅ | ✅ |
-| Gemma | ✅ | ✅ | ✅ |
-| Mistral | ✅ | ✅ | ✅ |
-| Qwen2 | ✅ | ✅ | ✅ |
+| Gemma | ⚠️ | ⚠️ | ⚠️ |
+| Mistral | ⚠️ | ⚠️ | ⚠️ |
+| Qwen2 | ⚠️ | ⚠️ | ⚠️ |
 
-*More models coming soon!*
+> ⚠️ **Experimental:** Gemma, Mistral, and Qwen2 support is architecture-level
+> (they share the same decoder-layer structure as LLaMA) but has not been
+> end-to-end tested yet. LLaMA-family models are fully verified.
+>
+> *More models coming soon!*
 
 ## 📖 Documentation
 
@@ -280,10 +293,10 @@ pre-commit install
 If you use Cambium in your research, please cite:
 
 ```bibtex
-@software{cambium2024,
+@software{cambium2026,
   title={Cambium: Advanced LLM Architecture Augmentation},
   author={Sorawit Chokphantavee, Sirawit Chokphantavee, and Cambium Team},
-  year={2024},
+  year={2026},
   url={https://github.com/SorawitChok/Cambium}
 }
 ```
@@ -291,15 +304,6 @@ If you use Cambium in your research, please cite:
 ## 📜 License
 
 Cambium is released under the Apache License 2.0. See [LICENSE](LICENSE) for details.
-
-### Commercial Use
-
-Cambium is free for commercial use under Apache 2.0. For enterprises requiring:
-- Professional support & SLAs
-- Custom expansion strategies
-- Training & consulting services
-
-See [Enterprise](https://cambium.dev/enterprise) for commercial offerings.
 
 ## 🙏 Acknowledgments
 
@@ -312,7 +316,6 @@ Cambium builds on the excellent work of:
 
 - **GitHub Issues**: Bug reports and feature requests
 - **Discussions**: Q&A and general discussion
-- **Discord**: [Join our community](https://discord.gg/cambium)
 
 ---
 

@@ -13,7 +13,7 @@ Basic Installation
 
 Install Cambium from PyPI::
 
-   pip install cambium
+   pip install cambium-llm
 
 This installs the core library with the minimal runtime dependencies:
 
@@ -33,7 +33,7 @@ Training extras
 
 Install if you plan to use ``StagedTrainer``, ``TrainingUtilities``, or integrate with TRL::
 
-   pip install "cambium[train]"
+   pip install "cambium-llm[train]"
 
 Extra packages installed:
 
@@ -47,7 +47,7 @@ Development extras
 
 Install if you are contributing to Cambium or building the documentation::
 
-   pip install "cambium[dev]"
+   pip install "cambium-llm[dev]"
 
 Extra packages installed:
 
@@ -61,7 +61,7 @@ All extras
 
 Install everything at once::
 
-   pip install "cambium[all]"
+   pip install "cambium-llm[all]"
 
 This includes ``[dev]``, ``[train]``, and the optional ``unsloth`` integration.
 

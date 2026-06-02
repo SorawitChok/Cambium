@@ -23,49 +23,42 @@ class TrainingPhase:
 
     Each phase can have different freezing patterns and learning rates,
     enabling progressive training strategies.
+
+    Args:
+        name: Name of the phase for logging.
+        epochs: Number of epochs for this phase.
+        freeze: What to freeze. One of ``'original'``, ``'all'``, ``'none'``,
+            or None (no change).
+        unfreeze_groups: Layer group indices to unfreeze (for progressive
+            unfreezing).
+        lr: Learning rate for this phase.
+        discriminative_lr: Discriminative LR config mapping patterns to
+            learning rates. Example::
+
+                {"embeddings": 1e-7, "original_layers": 1e-6, "new_layers": 1e-4}
+
+        batch_size: Batch size for this phase.
+        gradient_accumulation_steps: Gradient accumulation steps.
+        warmup_steps: Warmup steps for this phase.
+        max_grad_norm: Maximum gradient norm for clipping.
+        eval_every: Evaluate every N steps.
+        save_every: Save checkpoint every N steps.
+        callbacks: Optional callbacks to run at phase start/end.
     """
 
     name: str
-    """Name of the phase for logging."""
-
     epochs: int = 1
-    """Number of epochs for this phase."""
-
     freeze: str | None = None
-    """What to freeze: 'original', 'all', 'none', or None (no change)."""
-
     unfreeze_groups: list[int] | None = None
-    """Layer group indices to unfreeze (for progressive unfreezing)."""
-
     lr: float = 1e-4
-    """Learning rate for this phase."""
-
     discriminative_lr: dict[str, float] | None = field(default_factory=dict)
-    """
-    Discriminative LR config mapping patterns to learning rates.
-    Example: {"embeddings": 1e-7, "original_layers": 1e-6, "new_layers": 1e-4}
-    """
-
     batch_size: int = 8
-    """Batch size for this phase."""
-
     gradient_accumulation_steps: int = 1
-    """Gradient accumulation steps."""
-
     warmup_steps: int = 100
-    """Warmup steps for this phase."""
-
     max_grad_norm: float = 1.0
-    """Maximum gradient norm for clipping."""
-
     eval_every: int = 100
-    """Evaluate every N steps."""
-
     save_every: int = 500
-    """Save checkpoint every N steps."""
-
     callbacks: list[Callable] = field(default_factory=list)
-    """Optional callbacks to run at phase start/end."""
 
 
 class StagedTrainer:

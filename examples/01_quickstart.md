@@ -5,9 +5,9 @@ This guide shows you how to get started with Cambium for expanding LLMs.
 ## Installation
 
 ```bash
-pip install cambium
+pip install cambium-llm
 # Or with training dependencies
-pip install "cambium[train]"
+pip install "cambium-llm[train]"
 ```
 
 ## Basic Usage: Expanding a Model

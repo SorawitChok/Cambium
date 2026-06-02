@@ -1,7 +1,7 @@
 Changelog
 =========
 
-Version 0.1.0 (2024-06-02)
+Version 0.1.0 (2026-06-02)
 --------------------------
 
 Initial release of Cambium.

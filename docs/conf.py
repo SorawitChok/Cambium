@@ -20,7 +20,7 @@ if os.path.exists(_examples_src):
 
 # -- Project information -----------------------------------------------------
 project = "Cambium"
-copyright = "2024–2026, Sorawit Chokphantavee, Sirawit Chokphantavee, and Cambium Team"
+copyright = "2026, Sorawit Chokphantavee, Sirawit Chokphantavee, and Cambium Team"
 author = "Sorawit Chokphantavee, Sirawit Chokphantavee, and Cambium Team"
 release = "0.1.0"
 version = "0.1.0"

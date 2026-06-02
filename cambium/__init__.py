@@ -26,7 +26,7 @@ from cambium.exceptions import (
     ShapeMismatchError,
 )
 from cambium.models.expandable import ExpandableModel
-from cambium.strategies.block_expansion import InterleavedExpansion
+from cambium.strategies.block_expansion import AppendExpansion, InterleavedExpansion
 from cambium.strategies.custom_expansion import CustomBlockExpansion
 from cambium.strategies.parallel_adapters import ParallelAdapterExpansion
 from cambium.strategies.width_expansion import WidthExpansion
@@ -41,6 +41,7 @@ __all__ = [
     "InitializationStrategy",
     # Expansion strategies
     "InterleavedExpansion",
+    "AppendExpansion",
     "WidthExpansion",
     "ParallelAdapterExpansion",
     "CustomBlockExpansion",

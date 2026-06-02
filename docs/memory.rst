@@ -72,11 +72,8 @@ Before launching a long training run, sanity-check that the model produces valid
 
    from cambium.utils import validate_model_output
 
-   validate_model_output(
-       model.get_model(),
-       tokenizer,
-       test_prompt="Hello, world!",
-   )
+   test_inputs = tokenizer("Hello, world!", return_tensors="pt")
+   results = validate_model_output(model.get_model(), test_inputs["input_ids"])
 
 This verifies:
 

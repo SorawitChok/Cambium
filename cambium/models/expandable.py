@@ -30,9 +30,10 @@ class ExpandableModel:
     Example::
 
         from cambium import ExpandableModel, InterleavedExpansion
+        import torch
 
         # Load model
-        model = ExpandableModel.from_pretrained("google/gemma-2b")
+        model = ExpandableModel.from_pretrained("HuggingFaceTB/SmolLM2-135M", dtype=torch.float32)
 
         # Expand
         expander = InterleavedExpansion(num_layers=4)
@@ -103,6 +104,18 @@ class ExpandableModel:
 
         return cls(model, model_name=model_name_or_path, config=config)
 
+    @staticmethod
+    def _sanitize_config(config: dict[str, Any]) -> dict[str, Any]:
+        """Remove non-JSON-serializable values from a dict."""
+        sanitized: dict[str, Any] = {}
+        for k, v in config.items():
+            try:
+                json.dumps(v)
+                sanitized[k] = v
+            except (TypeError, ValueError):
+                sanitized[k] = f"<{type(v).__name__}>"
+        return sanitized
+
     def expand(self, expander: Any) -> "ExpandableModel":
         """
         Apply an expansion strategy.
@@ -122,7 +135,7 @@ class ExpandableModel:
         self.expansions.append(
             {
                 "strategy": type(expander).__name__,
-                "config": getattr(expander, "__dict__", {}),
+                "config": self._sanitize_config(getattr(expander, "__dict__", {})),
             }
         )
 

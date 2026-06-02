@@ -30,22 +30,21 @@ class InterleavedExpansion:
     - Preserves all original weights exactly
     - Allows gradual capacity increase
     - Maintains the original model's behavior initially (with identity init)
+
+    Args:
+        num_layers: Number of new blocks to insert.
+        positions: Specific positions to insert blocks. Auto-distributed if None.
+        initialization: Initialization strategy. One of ``'identity'``,
+            ``'small_random'``, ``'noise'``, ``'zero'``.
+        block_config: Override configuration for new blocks.
+        layer_attribute: Dot-separated path to the layers ModuleList.
     """
 
     num_layers: int
-    """Number of new blocks to insert."""
-
-    positions: dict[int] | None = None
-    """Specific positions to insert blocks. Auto-distributed if None."""
-
+    positions: list[int] | None = None
     initialization: str = "identity"
-    """Initialization strategy: 'identity', 'small_random', 'noise', 'zero'."""
-
     block_config: dict[str, Any] | None = field(default_factory=dict)
-    """Override configuration for new blocks."""
-
     layer_attribute: str = "model.layers"
-    """Dot-separated path to the layers ModuleList."""
 
     def expand(self, model: nn.Module, engine: ExpansionEngine) -> nn.Module:
         """
@@ -104,7 +103,7 @@ class InterleavedExpansion:
             module = getattr(module, part)
         return module
 
-    def _compute_positions(self, current_layers: int) -> dict[int]:
+    def _compute_positions(self, current_layers: int) -> list[int]:
         """
         Compute insertion positions for new blocks.
 
