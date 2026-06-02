@@ -325,15 +325,15 @@ class TestCustomBlockExpansionResidual:
 
         expander.expand(model, engine)
 
-        # After inserting at positions [1, 3] in descending order (3 first, then 1):
+        # After inserting at positions [1, 3] in ascending order (1 first, then 3):
         # Original [L0, L1, L2, L3]
-        # Insert at 3: [L0, L1, L2, New, L3]
-        # Insert at 1: [L0, New, L1, L2, New, L3]
-        # So wrappers are at indices 1 and 4
+        # Insert at 1: [L0, New, L1, L2, L3]
+        # Insert at 3: [L0, New, L1, New, L2, L3]
+        # So wrappers are at indices 1 and 3
         wrapper_count = sum(1 for layer in model.model.layers if isinstance(layer, ResidualWrapper))
         assert wrapper_count == 2
         assert isinstance(model.model.layers[1], ResidualWrapper)
-        assert isinstance(model.model.layers[4], ResidualWrapper)
+        assert isinstance(model.model.layers[3], ResidualWrapper)
 
     def test_residual_connection_false(self):
         """Blocks are not wrapped when residual_connection=False."""
@@ -482,7 +482,7 @@ class TestCustomBlockExpansionInitialization:
         )
 
         with pytest.raises(ValueError, match="custom_init_fn must be provided"):
-            expander._apply_initialization(model, [2])
+            expander._apply_initialization(model, [])
 
 
 class TestTemplateBlocks:

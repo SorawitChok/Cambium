@@ -156,10 +156,9 @@ class CustomBlockExpansion:
             block_attribute=self.layer_attribute,
         )
 
-        # 7. Apply initialization to blocks (before wrapping, we init the inner block)
-        self._apply_initialization(model, positions)
+        # Initialize the newly inserted blocks directly (no position lookups).
+        self._apply_initialization(model, blocks)
 
-        # 8. Update config
         self._update_config(model, positions)
 
         logger.info(f"Custom block expansion complete: inserted {len(positions)} blocks")
@@ -391,17 +390,20 @@ class CustomBlockExpansion:
 
         logger.info(f"All {len(blocks)} blocks passed validation")
 
-    def _apply_initialization(self, model: nn.Module, positions: list[int]) -> None:
-        """Apply initialization strategy to the newly inserted blocks."""
-        layers_module = self._get_layers_module(model)
+    def _apply_initialization(
+        self, model: nn.Module, blocks: list[nn.Module]
+    ) -> None:
+        """Apply initialization strategy to the newly inserted blocks.
 
-        # Get the newly inserted blocks
-        new_blocks = [layers_module[pos] for pos in positions]
-
+        Args:
+            model: The expanded model. Only used for ``model_type``-aware smart init.
+            blocks: The block instances that were just inserted (after optional
+                ``ResidualWrapper`` wrapping).
+        """
         if self.initialization == "custom":
             if self.custom_init_fn is None:
                 raise ValueError("custom_init_fn must be provided when initialization='custom'")
-            for i, block in enumerate(new_blocks):
+            for i, block in enumerate(blocks):
                 # If wrapped in ResidualWrapper, initialize the inner block
                 inner = block.block if isinstance(block, ResidualWrapper) else block
                 self.custom_init_fn(inner)
@@ -427,7 +429,7 @@ class CustomBlockExpansion:
 
         initializer = Initializer()
 
-        for i, block in enumerate(new_blocks):
+        for i, block in enumerate(blocks):
             inner = block.block if isinstance(block, ResidualWrapper) else block
 
             if self.initialization == "smart":

@@ -63,13 +63,11 @@ class ExpansionEngine:
             if pos < 0 or pos > original_length:
                 raise ValueError(f"Invalid position {pos}. Must be between 0 and {original_length}")
 
-        # Sort positions in descending order to maintain indices during insertion
-        sorted_positions = sorted(positions, reverse=True)
+        # Ascending sort preserves caller-requested indices.
+        sorted_positions = sorted(positions)
 
-        # Create new blocks
         new_blocks = [block_factory() for _ in range(len(positions))]
 
-        # Insert blocks (from end to start to maintain indices)
         for i, pos in enumerate(sorted_positions):
             layers_module.insert(pos, new_blocks[i])
             new_blocks[i]._cambium_new = True

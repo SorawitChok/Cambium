@@ -19,7 +19,10 @@ Cambium ships with 5 ready-made block templates:
 from cambium import ExpandableModel, CustomBlockExpansion
 from cambium.blocks import SwiGLUBlock, GatedResidualBlock
 
-model = ExpandableModel.from_pretrained("google/gemma-2b")
+# A small model is fine — custom-block logic is independent of model size.
+# We use SmolLM2-135M here so this example runs on a laptop without
+# gated access. Any Hugging Face causal-LM works the same way.
+model = ExpandableModel.from_pretrained("HuggingFaceTB/SmolLM2-135M")
 
 # Insert SwiGLU MLP blocks
 model.expand(CustomBlockExpansion(
@@ -67,7 +70,7 @@ class MyBlock(CambiumBlock):
         x = self.proj(self.norm(hidden_states))
         return self.act(x)
 
-model = ExpandableModel.from_pretrained("google/gemma-2b")
+model = ExpandableModel.from_pretrained("HuggingFaceTB/SmolLM2-135M")
 
 model.expand(CustomBlockExpansion(
     block_class=MyBlock,
@@ -115,9 +118,11 @@ You don't have to subclass `CambiumBlock`. Any `nn.Module` works as long as it:
 import torch.nn as nn
 
 class PlainBlock(nn.Module):
-    def __init__(self, hidden_size):
+    # Cambium calls block_class(config, layer_idx=i), so the constructor
+    # must accept `config`. We pull the hidden size off it below.
+    def __init__(self, config):
         super().__init__()
-        self.linear = nn.Linear(hidden_size, hidden_size)
+        self.linear = nn.Linear(config.hidden_size, config.hidden_size)
 
     def forward(self, hidden_states, **kwargs):
         return self.linear(hidden_states)
@@ -125,7 +130,6 @@ class PlainBlock(nn.Module):
 model.expand(CustomBlockExpansion(
     block_class=PlainBlock,
     num_layers=2,
-    # block_class called as PlainBlock(config) — must accept config
 ))
 ```
 
@@ -144,9 +148,12 @@ model.expand(CustomBlockExpansion(
 ### 2. block_factory (Full Control)
 
 ```python
+# Capture the model config up front. The factory itself takes no
+# arguments — Cambium calls it as factory() once per inserted block.
+config = model.get_model().config
+
 def my_factory():
     """Create a block with custom logic."""
-    config = model.get_model().config
     block = MyBlock(config)
     # Custom setup here
     nn.init.xavier_uniform_(block.proj.weight)
@@ -223,9 +230,8 @@ model.expand(CustomBlockExpansion(
 If validation fails, you get a clear error:
 
 ```
-BlockValidationError: Block 0 validation failed:
-  - Block 0: output shape (1, 1, 64) doesn't match input shape (1, 1, 32).
-    With residual_connection=True, block output must match input shape.
+BlockValidationError: Block -1 validation failed: Validation failed with 1 error(s):
+  - Block 0: output shape (1, 1, 1152) doesn't match input shape (1, 1, 576). With residual_connection=True, block output must match input shape for proper addition.
 ```
 
 ## Mixing with Other Strategies
@@ -234,7 +240,7 @@ BlockValidationError: Block 0 validation failed:
 from cambium import ExpandableModel, InterleavedExpansion, CustomBlockExpansion
 from cambium.blocks import SwiGLUBlock, GatedResidualBlock
 
-model = ExpandableModel.from_pretrained("google/gemma-2b")
+model = ExpandableModel.from_pretrained("HuggingFaceTB/SmolLM2-135M")
 
 # First: insert standard blocks at even positions
 model.expand(InterleavedExpansion(
@@ -258,49 +264,6 @@ model.expand(CustomBlockExpansion(
 ))
 
 print(model.get_expansion_report())
-```
-
-## Advanced: Retrieval-Augmented Block
-
-```python
-from cambium.blocks import CambiumBlock
-import torch.nn as nn
-
-class RAGBlock(CambiumBlock):
-    """Block that can retrieve from an external knowledge store."""
-
-    required_config_keys = ["hidden_size"]
-
-    def __init__(self, config, layer_idx=0):
-        super().__init__()
-        hidden = config.hidden_size
-        self.query_proj = nn.Linear(hidden, hidden)
-        self.retriever_proj = nn.Linear(hidden, hidden)
-        self.fusion = nn.Linear(hidden * 2, hidden)
-        self.gate = nn.Linear(hidden, 1)
-
-    def forward(self, hidden_states, **kwargs):
-        # In practice, retrieval would happen here
-        # For now, this is a placeholder architecture
-        query = self.query_proj(hidden_states)
-
-        # Simulated retrieval output (replace with actual retrieval)
-        retrieved = self.retriever_proj(hidden_states)
-
-        # Fuse query and retrieved
-        fused = torch.cat([query, retrieved], dim=-1)
-        output = self.fusion(fused)
-
-        # Learned gating
-        gate = torch.sigmoid(self.gate(hidden_states))
-        return gate * output
-
-model.expand(CustomBlockExpansion(
-    block_class=RAGBlock,
-    num_layers=2,
-    residual_connection=True,
-    initialization="smart",
-))
 ```
 
 ## Tips for Custom Blocks

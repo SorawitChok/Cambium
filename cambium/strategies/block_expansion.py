@@ -71,19 +71,24 @@ class InterleavedExpansion:
         positions = self._compute_positions(current_layers)
         logger.info(f"Will insert blocks at positions: {positions}")
 
-        # Create block factory
-        block_factory = self._create_block_factory(model)
+        # Capture block instances so we can initialize them directly
+        # instead of looking them up by (now-stale) positions afterwards.
+        created_blocks: list[nn.Module] = []
+        factory = self._create_block_factory(model)
 
-        # Perform insertion
+        def capturing_factory() -> nn.Module:
+            block = factory()
+            created_blocks.append(block)
+            return block
+
         engine.insert_blocks(
             model,
             positions,
-            block_factory,
+            capturing_factory,
             block_attribute=self.layer_attribute,
         )
 
-        # Apply initialization to new blocks
-        self._apply_initialization(model, positions)
+        self._apply_initialization(model, created_blocks)
 
         # Update model config
         self._update_config(model)
@@ -165,13 +170,16 @@ class InterleavedExpansion:
 
         return create_block
 
-    def _apply_initialization(self, model: nn.Module, positions: dict[int]) -> None:
-        """Apply initialization strategy to newly inserted blocks."""
-        layers_module = self._get_layers_module(model)
+    def _apply_initialization(
+        self, model: nn.Module, blocks: list[nn.Module]
+    ) -> None:
+        """Apply initialization strategy to the newly inserted blocks.
 
-        # Get the newly inserted blocks
-        new_blocks = [layers_module[pos] for pos in positions]
-
+        Args:
+            model: The expanded model. Unused; kept for API symmetry with
+                ``CustomBlockExpansion``.
+            blocks: The block instances that were just inserted.
+        """
         # Map initialization string to strategy
         strategy_map = {
             "identity": InitializationStrategy.IDENTITY_MAPPING,
@@ -187,7 +195,7 @@ class InterleavedExpansion:
         initializer = Initializer(strategy)
 
         # Apply to each new block
-        for i, block in enumerate(new_blocks):
+        for i, block in enumerate(blocks):
             # Get all modules in the block
             modules = list(block.modules())[1:]  # Skip the block itself
             initializer.apply(modules)
