@@ -282,7 +282,7 @@ If you use Cambium in your research, please cite:
 ```bibtex
 @software{cambium2024,
   title={Cambium: Advanced LLM Architecture Augmentation},
-  author={Cambium Contributors},
+  author={Sorawit Chokphantavee, Sirawit Chokphantavee, and Cambium Team},
   year={2024},
   url={https://github.com/cambium-lib/cambium}
 }

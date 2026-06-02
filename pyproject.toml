@@ -9,7 +9,7 @@ description = "Advanced LLM architecture augmentation library - surgical model e
 readme = "README.md"
 license = {text = "Apache-2.0"}
 authors = [
-    {name = "Cambium Contributors"}
+    {name = "Sorawit Chokphantavee, Sirawit Chokphantavee, and Cambium Team"}
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
