@@ -164,14 +164,19 @@ def main():
     print("\n[A2] Expanding with bottleneck adapters (every layer)")
     a_wrapper = ExpandableModel.from_pretrained(MODEL_NAME, dtype=torch.float32)
     a_model = a_wrapper.get_model()
-    a_wrapper.expand(ParallelAdapterExpansion(
-        adapter_type="bottleneck",
-        bottleneck_dim=BOTTLENECK_DIM,
-        initialization="zero",
-    ))
+    a_wrapper.expand(
+        ParallelAdapterExpansion(
+            adapter_type="bottleneck",
+            bottleneck_dim=BOTTLENECK_DIM,
+            initialization="zero",
+        )
+    )
     adapter_counts = [len(getattr(layer, "cambium_adapters", [])) for layer in a_model.model.layers]
     assert all(c == 1 for c in adapter_counts)
-    assert all(isinstance(a_model.model.layers[i].cambium_adapters[0], ParallelBottleneckAdapter) for i in range(n_layers))
+    assert all(
+        isinstance(a_model.model.layers[i].cambium_adapters[0], ParallelBottleneckAdapter)
+        for i in range(n_layers)
+    )
     print(f"    -> attached {sum(adapter_counts)} bottleneck adapters ({n_layers} layers x 1)")
 
     print("\n[A4] Forward + validation")
@@ -208,8 +213,15 @@ def main():
     reloaded_model = reloaded.get_model()
     assert reloaded.is_expanded
     assert len(reloaded.expansions) == len(a_wrapper.expansions)
-    assert all(hasattr(reloaded_model.model.layers[i], "cambium_adapters") and len(reloaded_model.model.layers[i].cambium_adapters) == 1 for i in range(n_layers))
-    assert all(isinstance(reloaded_model.model.layers[i].cambium_adapters[0], ParallelBottleneckAdapter) for i in range(n_layers))
+    assert all(
+        hasattr(reloaded_model.model.layers[i], "cambium_adapters")
+        and len(reloaded_model.model.layers[i].cambium_adapters) == 1
+        for i in range(n_layers)
+    )
+    assert all(
+        isinstance(reloaded_model.model.layers[i].cambium_adapters[0], ParallelBottleneckAdapter)
+        for i in range(n_layers)
+    )
     reloaded_text = generate_text(reloaded_model, tokenizer, PROMPT)
     print(f"    -> Reload OK ({n_layers} adapters re-attached)")
     print(f"    -> Reloaded generation: '{reloaded_text}'")
@@ -232,12 +244,14 @@ def main():
     print(f"\n[B1] Expanding with target_layers={target_layers}")
     b_wrapper = ExpandableModel.from_pretrained(MODEL_NAME, dtype=torch.float32)
     b_model = b_wrapper.get_model()
-    b_wrapper.expand(ParallelAdapterExpansion(
-        adapter_type="bottleneck",
-        bottleneck_dim=BOTTLENECK_DIM,
-        initialization="zero",
-        target_layers=target_layers,
-    ))
+    b_wrapper.expand(
+        ParallelAdapterExpansion(
+            adapter_type="bottleneck",
+            bottleneck_dim=BOTTLENECK_DIM,
+            initialization="zero",
+            target_layers=target_layers,
+        )
+    )
     b_counts = [len(getattr(layer, "cambium_adapters", [])) for layer in b_model.model.layers]
     for i in range(n_layers):
         expected = 1 if i in target_layers else 0
@@ -269,14 +283,19 @@ def main():
     print(f"\n[C1] Expanding with attention adapters (num_heads={ATTN_HEADS})")
     c_wrapper = ExpandableModel.from_pretrained(MODEL_NAME, dtype=torch.float32)
     c_model = c_wrapper.get_model()
-    c_wrapper.expand(ParallelAdapterExpansion(
-        adapter_type="attention",
-        num_heads=ATTN_HEADS,
-        initialization="zero",
-    ))
+    c_wrapper.expand(
+        ParallelAdapterExpansion(
+            adapter_type="attention",
+            num_heads=ATTN_HEADS,
+            initialization="zero",
+        )
+    )
     c_counts = [len(getattr(layer, "cambium_adapters", [])) for layer in c_model.model.layers]
     assert all(c == 1 for c in c_counts)
-    assert all(isinstance(c_model.model.layers[i].cambium_adapters[0], ParallelAttentionAdapter) for i in range(n_layers))
+    assert all(
+        isinstance(c_model.model.layers[i].cambium_adapters[0], ParallelAttentionAdapter)
+        for i in range(n_layers)
+    )
     print(f"    -> attached {sum(c_counts)} attention adapters ({n_layers} layers x 1)")
 
     print("\n[C2] Forward + validation")
@@ -286,7 +305,9 @@ def main():
     assert not torch.isnan(out_logits_c).any()
     assert not torch.isinf(out_logits_c).any()
     print(f"    -> output logits shape: {tuple(out_logits_c.shape)}")
-    print(f"    -> validate_model_output: success={validate_model_output(c_model, dummy)['success']}")
+    print(
+        f"    -> validate_model_output: success={validate_model_output(c_model, dummy)['success']}"
+    )
 
     c_text_before = generate_text(c_model, tokenizer, PROMPT)
     print(f"    -> Attention (before train): '{c_text_before}'")
@@ -328,10 +349,12 @@ def main():
 
 if __name__ == "__main__":
     import sys
+
     try:
         sys.exit(main())
     except Exception as e:
         import traceback
+
         traceback.print_exc()
         print(f"\nERROR: {type(e).__name__}: {e}")
         sys.exit(1)

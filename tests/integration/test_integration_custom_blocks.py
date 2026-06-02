@@ -79,7 +79,9 @@ def main():
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     wrapper = ExpandableModel.from_pretrained(MODEL_NAME, dtype=torch.float32)
-    print(f"Loaded: {wrapper.config.num_hidden_layers} layers, hidden_size={wrapper.config.hidden_size}")
+    print(
+        f"Loaded: {wrapper.config.num_hidden_layers} layers, hidden_size={wrapper.config.hidden_size}"
+    )
 
     # ========================================================================
     # Section A: Using Template Blocks
@@ -88,12 +90,14 @@ def main():
         w = ExpandableModel.from_pretrained(MODEL_NAME, dtype=torch.float32)
         initial = w.config.num_hidden_layers
         print(f"    Original layers: {initial}")
-        w.expand(CustomBlockExpansion(
-            block_class=SwiGLUBlock,
-            num_layers=4,
-            residual_connection=True,
-            initialization="smart",
-        ))
+        w.expand(
+            CustomBlockExpansion(
+                block_class=SwiGLUBlock,
+                num_layers=4,
+                residual_connection=True,
+                initialization="smart",
+            )
+        )
         print(f"    Expanded layers: {w.config.num_hidden_layers}")
         assert w.config.num_hidden_layers == initial + 4
         print(f"    Section A: {initial + 4} layers (4 SwiGLU blocks inserted) OK")
@@ -121,13 +125,15 @@ def main():
                 return self.act(x)
 
         initial = w.config.num_hidden_layers
-        w.expand(CustomBlockExpansion(
-            block_class=MyBlock,
-            num_layers=2,
-            positions=[8, 16],
-            residual_connection=True,
-            initialization="smart",
-        ))
+        w.expand(
+            CustomBlockExpansion(
+                block_class=MyBlock,
+                num_layers=2,
+                positions=[8, 16],
+                residual_connection=True,
+                initialization="smart",
+            )
+        )
         print(f"    {initial} -> {w.config.num_hidden_layers} layers")
         assert w.config.num_hidden_layers == initial + 2
 
@@ -153,11 +159,13 @@ def main():
                 return hidden_states + self.down(self.act(self.up(hidden_states)))
 
         initial = w.config.num_hidden_layers
-        w.expand(CustomBlockExpansion(
-            block_class=ResidualMLP,
-            num_layers=2,
-            residual_connection=False,
-        ))
+        w.expand(
+            CustomBlockExpansion(
+                block_class=ResidualMLP,
+                num_layers=2,
+                residual_connection=False,
+            )
+        )
         print(f"    {initial} -> {w.config.num_hidden_layers} layers")
         assert w.config.num_hidden_layers == initial + 2
 
@@ -178,10 +186,12 @@ def main():
                 return self.linear(hidden_states)
 
         initial = w.config.num_hidden_layers
-        w.expand(CustomBlockExpansion(
-            block_class=PlainBlock,
-            num_layers=2,
-        ))
+        w.expand(
+            CustomBlockExpansion(
+                block_class=PlainBlock,
+                num_layers=2,
+            )
+        )
         print(f"    {initial} -> {w.config.num_hidden_layers} layers (config signature)")
         assert w.config.num_hidden_layers == initial + 2
 
@@ -220,11 +230,13 @@ def main():
                 return self.proj(hidden_states)
 
         initial = w.config.num_hidden_layers
-        w.expand(CustomBlockExpansion(
-            block_class=MyBlock,
-            num_layers=4,
-            residual_connection=True,
-        ))
+        w.expand(
+            CustomBlockExpansion(
+                block_class=MyBlock,
+                num_layers=4,
+                residual_connection=True,
+            )
+        )
         print(f"    block_class mode: {initial} -> {w.config.num_hidden_layers} layers")
         assert w.config.num_hidden_layers == initial + 4
 
@@ -249,11 +261,13 @@ def main():
             return block
 
         initial = w.config.num_hidden_layers
-        w.expand(CustomBlockExpansion(
-            block_factory=my_factory,
-            num_layers=4,
-            residual_connection=True,
-        ))
+        w.expand(
+            CustomBlockExpansion(
+                block_factory=my_factory,
+                num_layers=4,
+                residual_connection=True,
+            )
+        )
         print(f"    block_factory mode: {initial} -> {w.config.num_hidden_layers} layers")
         assert w.config.num_hidden_layers == initial + 4
 
@@ -274,11 +288,13 @@ def main():
         blocks = [MyBlock(config, layer_idx=i) for i in range(4)]
 
         initial = w.config.num_hidden_layers
-        w.expand(CustomBlockExpansion(
-            block_instances=blocks,
-            positions=[4, 8, 12, 16],
-            residual_connection=True,
-        ))
+        w.expand(
+            CustomBlockExpansion(
+                block_instances=blocks,
+                positions=[4, 8, 12, 16],
+                residual_connection=True,
+            )
+        )
         print(f"    block_instances mode: {initial} -> {w.config.num_hidden_layers} layers")
         assert w.config.num_hidden_layers == initial + 4
 
@@ -292,11 +308,13 @@ def main():
     def section_f1():
         w = ExpandableModel.from_pretrained(MODEL_NAME, dtype=torch.float32)
         initial = w.config.num_hidden_layers
-        w.expand(CustomBlockExpansion(
-            block_class=SwiGLUBlock,
-            num_layers=2,
-            initialization="smart",
-        ))
+        w.expand(
+            CustomBlockExpansion(
+                block_class=SwiGLUBlock,
+                num_layers=2,
+                initialization="smart",
+            )
+        )
         print(f"    smart init: {initial} -> {w.config.num_hidden_layers} layers")
         assert w.config.num_hidden_layers == initial + 2
 
@@ -318,12 +336,14 @@ def main():
             nn.init.zeros_(block.proj.bias)
 
         initial = w.config.num_hidden_layers
-        w.expand(CustomBlockExpansion(
-            block_class=MyBlock,
-            num_layers=2,
-            initialization="custom",
-            custom_init_fn=my_init,
-        ))
+        w.expand(
+            CustomBlockExpansion(
+                block_class=MyBlock,
+                num_layers=2,
+                initialization="custom",
+                custom_init_fn=my_init,
+            )
+        )
         print(f"    custom init: {initial} -> {w.config.num_hidden_layers} layers")
         assert w.config.num_hidden_layers == initial + 2
 
@@ -347,11 +367,13 @@ def main():
                 return self.proj(hidden_states)
 
         initial = w.config.num_hidden_layers
-        w.expand(CustomBlockExpansion(
-            block_class=MyBlock,
-            num_layers=2,
-            validate=True,
-        ))
+        w.expand(
+            CustomBlockExpansion(
+                block_class=MyBlock,
+                num_layers=2,
+                validate=True,
+            )
+        )
         print(f"    validation enabled: {initial} -> {w.config.num_hidden_layers}")
         assert w.config.num_hidden_layers == initial + 2
 
@@ -370,12 +392,14 @@ def main():
 
         raised = False
         try:
-            w.expand(CustomBlockExpansion(
-                block_class=BadShapeBlock,
-                num_layers=1,
-                validate=True,
-                residual_connection=True,
-            ))
+            w.expand(
+                CustomBlockExpansion(
+                    block_class=BadShapeBlock,
+                    num_layers=1,
+                    validate=True,
+                    residual_connection=True,
+                )
+            )
         except BlockValidationError as e:
             raised = True
             print(f"    BlockValidationError raised (expected): {str(e)[:200]}...")
@@ -395,11 +419,13 @@ def main():
                 return self.proj(hidden_states)
 
         initial = w.config.num_hidden_layers
-        w.expand(CustomBlockExpansion(
-            block_class=MyBlock,
-            num_layers=2,
-            validate=False,
-        ))
+        w.expand(
+            CustomBlockExpansion(
+                block_class=MyBlock,
+                num_layers=2,
+                validate=False,
+            )
+        )
         print(f"    validation disabled: {initial} -> {w.config.num_hidden_layers}")
         assert w.config.num_hidden_layers == initial + 2
 
@@ -419,20 +445,24 @@ def main():
         after_interleave = w.config.num_hidden_layers
         print(f"    After InterleavedExpansion: {after_interleave}")
 
-        w.expand(CustomBlockExpansion(
-            block_class=SwiGLUBlock,
-            num_layers=2,
-            positions=[12, 24],
-            residual_connection=True,
-        ))
+        w.expand(
+            CustomBlockExpansion(
+                block_class=SwiGLUBlock,
+                num_layers=2,
+                positions=[12, 24],
+                residual_connection=True,
+            )
+        )
         after_swiglu = w.config.num_hidden_layers
         print(f"    After SwiGLU custom: {after_swiglu}")
 
-        w.expand(CustomBlockExpansion(
-            block_class=GatedResidualBlock,
-            num_layers=2,
-            residual_connection=True,
-        ))
+        w.expand(
+            CustomBlockExpansion(
+                block_class=GatedResidualBlock,
+                num_layers=2,
+                residual_connection=True,
+            )
+        )
         after_gated = w.config.num_hidden_layers
         print(f"    After GatedResidual custom: {after_gated}")
         assert after_gated == after_interleave + 4
@@ -468,4 +498,5 @@ def main():
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(main())

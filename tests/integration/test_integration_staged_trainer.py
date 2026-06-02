@@ -275,10 +275,12 @@ def main():
 
 if __name__ == "__main__":
     import sys
+
     try:
         sys.exit(main())
     except Exception as e:
         import traceback
+
         traceback.print_exc()
         print(f"\nERROR: {type(e).__name__}: {e}")
         sys.exit(1)

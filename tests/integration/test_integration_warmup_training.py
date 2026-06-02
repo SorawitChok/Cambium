@@ -104,7 +104,9 @@ def main():
     print(f"\n[6] Training complete")
     for phase_hist in history["phases"]:
         final_loss = phase_hist["losses"][-1] if phase_hist["losses"] else None
-        print(f"    -> Phase '{phase_hist['name']}' | steps: {phase_hist['steps']} | final loss: {final_loss}")
+        print(
+            f"    -> Phase '{phase_hist['name']}' | steps: {phase_hist['steps']} | final loss: {final_loss}"
+        )
 
     # 7. Save
     print(f"\n[7] Saving warmed-up model")
@@ -136,6 +138,7 @@ def main():
 
 if __name__ == "__main__":
     import sys
+
     try:
         sys.exit(main())
     except Exception as e:

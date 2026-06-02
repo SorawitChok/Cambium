@@ -149,12 +149,14 @@ def main():
     print("\n[B1] Expanding selectively")
     sel_wrapper = ExpandableModel.from_pretrained(MODEL_NAME, dtype=torch.float32)
     sel_model = sel_wrapper.get_model()
-    sel_wrapper.expand(WidthExpansion(
-        hidden_dim_multiplier=MULTIPLIER,
-        initialization="zero",
-        layer_indices=list(range(4, 8)),
-        expand_attention=False,
-    ))
+    sel_wrapper.expand(
+        WidthExpansion(
+            hidden_dim_multiplier=MULTIPLIER,
+            initialization="zero",
+            layer_indices=list(range(4, 8)),
+            expand_attention=False,
+        )
+    )
     for i in [0, 4, 7, 11]:
         layer = sel_model.model.layers[i]
         print(f"    layer {i}: up_proj.out={layer.mlp.up_proj.weight.shape[0]}")
@@ -198,10 +200,12 @@ def main():
 
 if __name__ == "__main__":
     import sys
+
     try:
         sys.exit(main())
     except Exception as e:
         import traceback
+
         traceback.print_exc()
         print(f"\nERROR: {type(e).__name__}: {e}")
         sys.exit(1)
