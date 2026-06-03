@@ -90,7 +90,7 @@ class InterleavedExpansion:
         self._apply_initialization(model, created_blocks)
 
         # Update model config
-        self._update_config(model)
+        self._update_config(model, positions=positions)
 
         logger.info("Interleaved expansion complete")
         return model
@@ -152,18 +152,30 @@ class InterleavedExpansion:
         model_type = getattr(config, "model_type", "llama")
 
         def create_block() -> nn.Module:
-            if model_type in ["llama", "mistral"]:
+            if model_type == "llama":
                 from transformers.models.llama.modeling_llama import LlamaDecoderLayer
 
                 return LlamaDecoderLayer(config, layer_idx=0)
+            elif model_type == "mistral":
+                from transformers.models.mistral.modeling_mistral import MistralDecoderLayer
+
+                return MistralDecoderLayer(config, layer_idx=0)
             elif model_type == "gemma":
                 from transformers.models.gemma.modeling_gemma import GemmaDecoderLayer
 
                 return GemmaDecoderLayer(config, layer_idx=0)
+            elif model_type in ["gemma3", "gemma3_text"]:
+                from transformers.models.gemma3.modeling_gemma3 import Gemma3DecoderLayer
+
+                return Gemma3DecoderLayer(config, layer_idx=0)
             elif model_type == "qwen2":
                 from transformers.models.qwen2.modeling_qwen2 import Qwen2DecoderLayer
 
                 return Qwen2DecoderLayer(config, layer_idx=0)
+            elif model_type == "qwen3":
+                from transformers.models.qwen3.modeling_qwen3 import Qwen3DecoderLayer
+
+                return Qwen3DecoderLayer(config, layer_idx=0)
             else:
                 raise ValueError(f"Unsupported model type: {model_type}")
 
@@ -198,12 +210,33 @@ class InterleavedExpansion:
             initializer.apply(modules)
             logger.debug(f"Applied {self.initialization} initialization to new block {i}")
 
-    def _update_config(self, model: nn.Module) -> None:
+    def _update_config(self, model: nn.Module, positions: list[int]) -> None:
         """Update model config to reflect the new architecture."""
         if hasattr(model.config, "num_hidden_layers"):
             model.config.num_hidden_layers += self.num_layers
         if hasattr(model.config, "_name_or_path"):
             model.config._name_or_path += f"_cambium_expanded_{self.num_layers}L"
+
+        # Update layer_types if present (e.g. Gemma3 uses this to select
+        # sliding vs full attention per layer). The list must stay in sync
+        # with num_hidden_layers or the forward pass will IndexError.
+        if hasattr(model.config, "layer_types") and model.config.layer_types is not None:
+            original_layer_types = list(model.config.layer_types)
+            new_layer_types = list(original_layer_types)
+
+            for offset, pos in enumerate(sorted(positions)):
+                insert_pos = pos + offset  # Account for earlier insertions shifting indices
+                layer_type = (
+                    original_layer_types[pos]
+                    if pos < len(original_layer_types)
+                    else "full_attention"
+                )
+                new_layer_types.insert(insert_pos, layer_type)
+
+            model.config.layer_types = new_layer_types
+            logger.info(
+                f"Updated layer_types: {len(original_layer_types)} -> {len(new_layer_types)} entries"
+            )
 
 
 @dataclass
@@ -246,18 +279,30 @@ class AppendExpansion:
         model_type = getattr(config, "model_type", "llama")
 
         def create_block() -> nn.Module:
-            if model_type in ["llama", "mistral"]:
+            if model_type == "llama":
                 from transformers.models.llama.modeling_llama import LlamaDecoderLayer
 
                 return LlamaDecoderLayer(config, layer_idx=0)
+            elif model_type == "mistral":
+                from transformers.models.mistral.modeling_mistral import MistralDecoderLayer
+
+                return MistralDecoderLayer(config, layer_idx=0)
             elif model_type == "gemma":
                 from transformers.models.gemma.modeling_gemma import GemmaDecoderLayer
 
                 return GemmaDecoderLayer(config, layer_idx=0)
+            elif model_type in ["gemma3", "gemma3_text"]:
+                from transformers.models.gemma3.modeling_gemma3 import Gemma3DecoderLayer
+
+                return Gemma3DecoderLayer(config, layer_idx=0)
             elif model_type == "qwen2":
                 from transformers.models.qwen2.modeling_qwen2 import Qwen2DecoderLayer
 
                 return Qwen2DecoderLayer(config, layer_idx=0)
+            elif model_type == "qwen3":
+                from transformers.models.qwen3.modeling_qwen3 import Qwen3DecoderLayer
+
+                return Qwen3DecoderLayer(config, layer_idx=0)
             else:
                 raise ValueError(f"Unsupported model type: {model_type}")
 

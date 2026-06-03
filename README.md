@@ -194,13 +194,12 @@ trainer.add_phase(
 | Model | Block Expansion | Width Expansion | Adapters |
 |-------|-----------------|-----------------|----------|
 | LLaMA 2/3 | ✅ | ✅ | ✅ |
-| Gemma | ⚠️ | ⚠️ | ⚠️ |
-| Mistral | ⚠️ | ⚠️ | ⚠️ |
-| Qwen2 | ⚠️ | ⚠️ | ⚠️ |
+| Gemma / Gemma 3 | ✅ | ⚠️ | ⚠️ |
+| Mistral | ✅ | ⚠️ | ⚠️ |
+| Qwen2 / Qwen3 | ✅ | ⚠️ | ⚠️ |
 
-> ⚠️ **Experimental:** Gemma, Mistral, and Qwen2 support is architecture-level
-> (they share the same decoder-layer structure as LLaMA) but has not been
-> end-to-end tested yet. LLaMA-family models are fully verified.
+> ✅ **Verified end-to-end** for block expansion (`InterleavedExpansion`) on all listed models.
+> ⚠️ Width expansion and adapters are currently verified only on LLaMA-family models.
 >
 > *More models coming soon!*
 

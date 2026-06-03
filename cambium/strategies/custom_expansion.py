@@ -451,6 +451,26 @@ class CustomBlockExpansion:
         if hasattr(model.config, "_name_or_path"):
             model.config._name_or_path += f"_cambium_custom_{num_new}L"
 
+        # Update layer_types if present (e.g. Gemma3, Qwen3). The list must stay
+        # in sync with num_hidden_layers or the forward pass will IndexError.
+        if hasattr(model.config, "layer_types") and model.config.layer_types is not None:
+            original_layer_types = list(model.config.layer_types)
+            new_layer_types = list(original_layer_types)
+
+            for offset, pos in enumerate(sorted(positions)):
+                insert_pos = pos + offset  # Account for earlier insertions shifting indices
+                layer_type = (
+                    original_layer_types[pos]
+                    if pos < len(original_layer_types)
+                    else "full_attention"
+                )
+                new_layer_types.insert(insert_pos, layer_type)
+
+            model.config.layer_types = new_layer_types
+            logger.info(
+                f"Updated layer_types: {len(original_layer_types)} -> {len(new_layer_types)} entries"
+            )
+
         # Track custom block metadata
         custom_blocks = getattr(model.config, "_cambium_custom_blocks", [])
 

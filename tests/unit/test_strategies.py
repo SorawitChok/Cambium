@@ -117,7 +117,7 @@ class TestInterleavedExpansion:
         engine = MockEngine()
 
         expander = InterleavedExpansion(num_layers=2)
-        expander._update_config(model)
+        expander._update_config(model, positions=[1, 3])
 
         assert model.config.num_hidden_layers == 6
 
