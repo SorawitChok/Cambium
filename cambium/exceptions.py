@@ -41,3 +41,15 @@ class ExpansionError(CambiumError):
     """Error during model expansion."""
 
     pass
+
+
+class GraftingError(CambiumError):
+    """Error while loading or grafting a block from a remote model."""
+
+    pass
+
+
+class DataError(CambiumError):
+    """Error while loading, parsing, or tokenizing training data."""
+
+    pass

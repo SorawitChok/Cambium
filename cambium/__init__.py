@@ -22,14 +22,24 @@ from cambium.exceptions import (
     BlockValidationError,
     CambiumError,
     ConfigMismatchError,
+    DataError,
     ExpansionError,
+    GraftingError,
     ShapeMismatchError,
 )
 from cambium.models.expandable import ExpandableModel
 from cambium.strategies.block_expansion import AppendExpansion, InterleavedExpansion
 from cambium.strategies.custom_expansion import CustomBlockExpansion
+from cambium.strategies.grafted_expansion import GraftedBlockExpansion
 from cambium.strategies.parallel_adapters import ParallelAdapterExpansion
 from cambium.strategies.width_expansion import WidthExpansion
+from cambium.training.data import (
+    AlpacaFormatter,
+    ChatFormatter,
+    DataConfig,
+    TextFormatter,
+    build_text_dataloader,
+)
 from cambium.training.staged_trainer import StagedTrainer, TrainingPhase
 from cambium.training.utilities import TrainingUtilities
 
@@ -45,6 +55,7 @@ __all__ = [
     "WidthExpansion",
     "ParallelAdapterExpansion",
     "CustomBlockExpansion",
+    "GraftedBlockExpansion",
     # Custom blocks
     "CambiumBlock",
     "ResidualWrapper",
@@ -59,10 +70,17 @@ __all__ = [
     "StagedTrainer",
     "TrainingPhase",
     "TrainingUtilities",
+    "DataConfig",
+    "build_text_dataloader",
+    "TextFormatter",
+    "AlpacaFormatter",
+    "ChatFormatter",
     # Exceptions
     "CambiumError",
     "BlockValidationError",
     "ShapeMismatchError",
     "ConfigMismatchError",
     "ExpansionError",
+    "GraftingError",
+    "DataError",
 ]
