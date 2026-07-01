@@ -5,7 +5,7 @@ A library for surgical model expansion, allowing developers to add new layers
 and architecture blocks to existing LLMs while leveraging pretrained weights.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 from cambium.blocks.base import CambiumBlock, ResidualWrapper
 from cambium.blocks.templates import (
