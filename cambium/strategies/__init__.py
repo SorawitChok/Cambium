@@ -2,6 +2,7 @@
 
 from cambium.strategies.block_expansion import AppendExpansion, InterleavedExpansion
 from cambium.strategies.custom_expansion import CustomBlockExpansion
+from cambium.strategies.grafted_expansion import GraftedBlockExpansion
 from cambium.strategies.parallel_adapters import ParallelAdapterExpansion
 from cambium.strategies.width_expansion import WidthExpansion
 
@@ -11,6 +12,7 @@ __all__ = [
     "WidthExpansion",
     "ParallelAdapterExpansion",
     "CustomBlockExpansion",
+    "GraftedBlockExpansion",
 ]
 
 # Registry of strategy class name -> dataclass class. Used by
@@ -23,5 +25,11 @@ __all__ = [
 # from the JSON metadata alone; the user must re-apply those manually.
 STRATEGY_REGISTRY = {
     cls.__name__: cls
-    for cls in (InterleavedExpansion, AppendExpansion, WidthExpansion, ParallelAdapterExpansion)
+    for cls in (
+        InterleavedExpansion,
+        AppendExpansion,
+        WidthExpansion,
+        ParallelAdapterExpansion,
+        GraftedBlockExpansion,
+    )
 }
